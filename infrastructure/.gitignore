@@ -1,0 +1,38 @@
+# Fichiers d'environnement
+.env
+.env.local
+.env.production
+.env.staging
+
+# Données de base de données
+temp_db_data/
+data/
+
+# Logs
+*.log
+logs/
+
+# Fichiers temporaires
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Fichiers de configuration sensibles
+secrets/
+keys/
+*.key
+*.pem
+
+# Fichiers de sauvegarde
+*.bak
+*.backup
+
+# Fichiers de cache
+.cache/
+__pycache__/
+*.pyc
+
+# Fichiers Docker
+.dockerignore
+docker-compose.override.yml 

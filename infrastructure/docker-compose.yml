@@ -1,0 +1,151 @@
+services:
+  # Base de données pour le service d'authentification
+  auth-db:
+    image: postgres:13
+    container_name: cyber_cafe_auth_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${AUTH_DB_NAME}
+    ports:
+      - "${AUTH_DB_PORT}:5432"
+    volumes:
+      - ${DATA_VOLUME_PATH}/auth:/var/lib/postgresql/data
+    networks:
+      - cyber_cafe_network
+    restart: unless-stopped
+
+  # Base de données pour le service des clients
+  clients-db:
+    image: postgres:13
+    container_name: cyber_cafe_clients_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${CLIENTS_DB_NAME}
+    ports:
+      - "${CLIENTS_DB_PORT}:5432"
+    volumes:
+      - ${DATA_VOLUME_PATH}/clients:/var/lib/postgresql/data
+    networks:
+      - cyber_cafe_network
+    restart: unless-stopped
+
+  # Base de données pour le service des ordinateurs
+  computers-db:
+    image: postgres:13
+    container_name: cyber_cafe_computers_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${COMPUTERS_DB_NAME}
+    ports:
+      - "${COMPUTERS_DB_PORT}:5432"
+    volumes:
+      - ${DATA_VOLUME_PATH}/computers:/var/lib/postgresql/data
+    networks:
+      - cyber_cafe_network
+    restart: unless-stopped
+
+  # Base de données pour le service des sessions
+  sessions-db:
+    image: postgres:13
+    container_name: cyber_cafe_sessions_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${SESSIONS_DB_NAME}
+    ports:
+      - "${SESSIONS_DB_PORT}:5432"
+    volumes:
+      - ${DATA_VOLUME_PATH}/sessions:/var/lib/postgresql/data
+    networks:
+      - cyber_cafe_network
+    restart: unless-stopped
+
+  # Base de données pour le service de reporting
+  reporting-db:
+    image: postgres:13
+    container_name: cyber_cafe_reporting_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${REPORTING_DB_NAME}
+    ports:
+      - "${REPORTING_DB_PORT}:5432"
+    volumes:
+      - ${DATA_VOLUME_PATH}/reporting:/var/lib/postgresql/data
+    networks:
+      - cyber_cafe_network
+    restart: unless-stopped
+
+  # Redis pour le cache et les sessions
+  redis:
+    image: redis:7-alpine
+    container_name: cyber_cafe_redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - ${DATA_VOLUME_PATH}/redis:/data
+    networks:
+      - cyber_cafe_network
+    restart: unless-stopped
+
+  # Service d'Authentification
+  auth-service:
+    build:
+      context: ../backend/auth-service
+      dockerfile: Dockerfile
+    container_name: cyber_cafe_auth_service
+    ports:
+      - "${AUTH_SERVICE_PORT}:8001"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@auth-db:5432/${AUTH_DB_NAME}
+      - SECRET_KEY=${JWT_SECRET_KEY}
+      - ALGORITHM=${JWT_ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${JWT_ACCESS_TOKEN_EXPIRE_MINUTES}
+      - PYTHONPATH=/app
+    depends_on:
+      - auth-db
+    networks:
+      - cyber_cafe_network
+    restart: unless-stopped
+    volumes:
+      - ../backend/auth-service:/app
+
+  # Service de Gestion des Clients
+  clients-service:
+    build:
+      context: ../backend/clients-service
+      dockerfile: Dockerfile
+    container_name: cyber_cafe_clients_service
+    ports:
+      - "${CLIENTS_SERVICE_PORT}:8002"
+    environment:
+      - CLIENTS_DB_HOST=clients-db
+      - CLIENTS_DB_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - CLIENTS_DB_NAME=${CLIENTS_DB_NAME}
+      - CLIENTS_SERVICE_PORT=8002
+      - NODE_ENV=development
+      - CORS_ORIGINS=${CORS_ORIGINS}
+    depends_on:
+      - clients-db
+    networks:
+      - cyber_cafe_network
+    restart: unless-stopped
+    volumes:
+      - /app/node_modules
+
+networks:
+  cyber_cafe_network:
+    driver: bridge
+
+volumes:
+  auth_data:
+  clients_data:
+  computers_data:
+  sessions_data:
+  reporting_data:
+  redis_data:
