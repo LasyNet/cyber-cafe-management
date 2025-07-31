@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🖥️ Système de Gestion de Cyber-Café
 
 Un système complet de gestion de cyber-café avec architecture microservices, comprenant authentification, gestion des clients, ordinateurs, sessions et reporting.
@@ -165,3 +166,7 @@ Pour toute question ou problème :
 2. Vérifiez les logs : `docker-compose --env-file .env logs`
 3. Testez les connexions : `./test-connection.sh`
 4. Ouvrez une issue sur GitHub
+=======
+# cyber-cafe-management
+Ceci est une plateforme pour gerer les suivi des cyber cafés
+>>>>>>> 1aa4d0960c17ac33e85c1d1ab08888f87c77a1d2
