@@ -133,3 +133,26 @@ tr:hover td{background:#172338}
 @media(max-width:640px){.module-panel{padding:14px}.module-panel>.filter-tabs{max-width:100%;overflow:auto}.welcome-row{align-items:flex-start;gap:16px}.welcome-row .primary-button{white-space:nowrap}}
 
 .field-help{font-size:9px;font-weight:500;color:#9aa3b5}.mac-address{font:500 10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#687188;background:#f7f8fc;padding:5px 7px;border-radius:5px}
+
+
+/* Client registration alongside the new-session dialog */
+.session-modal-wide { width: min(860px, calc(100vw - 40px)); }
+.session-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
+.session-layout.with-client-form { grid-template-columns: minmax(0, 1fr) minmax(280px, .9fr); align-items: start; }
+.session-fields { min-width: 0; }
+.client-select-row { display: flex; align-items: end; gap: 10px; }
+.client-select-row .field-label { flex: 1; min-width: 0; }
+.add-session-client { flex-shrink: 0; min-height: 44px; margin-bottom: 0; white-space: nowrap; }
+.inline-client-panel { min-width: 0; padding: 18px; border: 1px solid var(--border, #e2e8f0); border-radius: 14px; background: var(--surface-soft, #f8fafc); }
+.inline-client-heading { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 18px; color: var(--text-primary, #0f172a); }
+.inline-client-heading > svg { flex-shrink: 0; margin-top: 2px; color: var(--accent, #dc2626); }
+.inline-client-heading div { display: grid; gap: 4px; }
+.inline-client-heading strong { font-size: 15px; }
+.inline-client-heading span { color: var(--text-secondary, #64748b); font-size: 12px; line-height: 1.4; }
+.inline-save-client { width: 100%; justify-content: center; margin-top: 4px; }
+@media (max-width: 720px) {
+  .session-modal-wide { width: min(540px, calc(100vw - 24px)); }
+  .session-layout.with-client-form { grid-template-columns: minmax(0, 1fr); }
+  .client-select-row { align-items: stretch; flex-direction: column; }
+  .add-session-client { align-self: flex-start; }
+}
