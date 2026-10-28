@@ -1,172 +1,58 @@
-<<<<<<< HEAD
-# 🖥️ Système de Gestion de Cyber-Café
+# 🖥️ Gestion de cyber-café
 
-Un système complet de gestion de cyber-café avec architecture microservices, comprenant authentification, gestion des clients, ordinateurs, sessions et reporting.
+Plateforme de gestion de cyber-café organisée en services backend. Le dépôt contient actuellement un service d'authentification FastAPI et un service de gestion des clients NestJS, ainsi que l'infrastructure PostgreSQL/Redis pour le développement. Les services ordinateurs, sessions, passerelle API et reporting restent à implémenter ou à intégrer.
 
-## 🏗️ Architecture
+## Architecture actuelle
+- **Auth Service** : FastAPI, JWT et PostgreSQL.
+- **Clients Service** : NestJS, TypeORM et PostgreSQL.
+- **Infrastructure** : Docker Compose, instances PostgreSQL et Redis.
+- **Frontend / autres services** : à développer.
 
-Le projet utilise une architecture microservices avec les composants suivants :
-
-### Backend Services
-- **API Gateway** : Point d'entrée unique pour toutes les API
-- **Auth Service** : Authentification et autorisation (JWT)
-- **Clients Service** : Gestion des clients et comptes
-- **Computers Service** : Gestion des ordinateurs et stations
-- **Sessions Service** : Gestion des sessions utilisateurs
-- **Reporting Service** : Rapports et statistiques
-
-### Infrastructure
-- **PostgreSQL** : 5 bases de données séparées (une par service)
-- **Redis** : Cache et sessions
-- **Docker** : Conteneurisation complète
-
-### Frontend
-- Interface utilisateur moderne (à développer)
-
-## 🚀 Démarrage Rapide
-
-### Prérequis
-- Docker Desktop installé et en cours d'exécution
+## Prérequis
+- Docker Desktop ou Docker Engine avec le plugin Compose
 - Git
+- OpenSSL
 
-### Installation
-
-1. **Cloner le projet**
-   ```bash
-   git clone <repository-url>
-   cd cyber-cafe-management
-   ```
-
-2. **Configurer l'environnement**
-   ```bash
-   cd infrastructure
-   ./setup-env.sh
-   ```
-
-3. **Démarrer les services**
-   ```bash
-   ./start-services.sh
-   ```
-
-4. **Vérifier que tout fonctionne**
-   ```bash
-   ./test-connection.sh
-   ```
-
-## 📁 Structure du Projet
-
-```
-cyber-cafe-management/
-├── backend/
-│   ├── api-gateway/          # Passerelle API
-│   ├── auth-service/         # Service d'authentification
-│   ├── clients-service/      # Service de gestion des clients
-│   ├── computers-service/    # Service de gestion des ordinateurs
-│   ├── reporting-service/    # Service de reporting
-│   └── session-service/      # Service de gestion des sessions
-├── frontend/                 # Interface utilisateur
-├── infrastructure/           # Configuration Docker et base de données
-│   ├── docker-compose.yml    # Configuration des services
-│   ├── env.example          # Modèle de variables d'environnement
-│   ├── setup-env.sh         # Script de configuration
-│   ├── start-services.sh    # Script de démarrage
-│   ├── stop-services.sh     # Script d'arrêt
-│   └── test-connection.sh   # Script de test
-└── README.md
-```
-
-## 🔧 Configuration
-
-### Variables d'Environnement
-Le fichier `infrastructure/env.example` contient toutes les variables de configuration nécessaires. Le script `setup-env.sh` crée automatiquement un fichier `.env` avec des valeurs par défaut sécurisées.
-
-### Ports par Défaut
-- **API Gateway** : 8000
-- **Auth Service** : 8001
-- **Clients Service** : 8002
-- **Computers Service** : 8003
-- **Sessions Service** : 8004
-- **Reporting Service** : 8005
-- **Auth DB** : 5432
-- **Clients DB** : 5433
-- **Computers DB** : 5434
-- **Sessions DB** : 5435
-- **Reporting DB** : 5436
-- **Redis** : 6379
-
-## 🛠️ Commandes Utiles
-
-### Infrastructure
+## Démarrage local
+Depuis la racine du dépôt :
 ```bash
-# Configuration initiale
-cd infrastructure
+git clone https://github.com/LasyNet/cyber-cafe-management.git
+cd cyber-cafe-management/infrastructure
+chmod +x setup-env.sh start-services.sh stop-services.sh test-connection.sh
 ./setup-env.sh
-
-# Démarrage des services
 ./start-services.sh
-
-# Arrêt des services
-./stop-services.sh
-
-# Test des connexions
 ./test-connection.sh
-
-# Vérification du statut
-docker-compose --env-file .env ps
-
-# Visualisation des logs
-docker-compose --env-file .env logs
 ```
 
-### Développement
+Le script crée `.env` à partir de `env.example` et génère des mots de passe PostgreSQL/Redis et une clé JWT aléatoires. Pour arrêter les services sans effacer les données, lancez `./stop-services.sh`.
+
+> **Attention :** `docker compose down -v` supprime les volumes et peut entraîner une perte de données.
+
+## Configuration et sécurité
+- Le modèle de configuration est `infrastructure/env.example`; ne commitez jamais les vrais fichiers `.env`.
+- Pour le service d'authentification en local, configurez les variables requises à partir de `backend/auth-service/.env.example`. Compose injecte celles-ci depuis `infrastructure/.env`.
+- Les ports Docker sont exposés uniquement sur l'interface locale.
+- Redis exige un mot de passe dans Compose.
+- Cette configuration est destinée au développement local. Avant la production, prévoyez TLS, gestion des secrets, migrations, sauvegardes et supervision.
+
+## Développement
+### Auth Service
 ```bash
-# Démarrer un service spécifique
-docker-compose --env-file .env up auth-db
-
-# Reconstruire les images
-docker-compose --env-file .env build
-
-# Nettoyer les conteneurs
-docker-compose --env-file .env down -v
+cd backend/auth-service
+python -m venv .venv
+# Activez l'environnement virtuel
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8001
 ```
 
-## 🔒 Sécurité
+### Clients Service
+```bash
+cd backend/clients-service
+npm ci
+npm run build
+npm test -- --runInBand
+```
+`npm run lint` vérifie sans modifier les fichiers; `npm run lint:fix` applique les corrections.
 
-⚠️ **Important** : Cette configuration est destinée au développement uniquement.
-
-Pour la production :
-- Changez tous les mots de passe par défaut
-- Utilisez des variables d'environnement sécurisées
-- Activez l'authentification Redis
-- Configurez des certificats SSL/TLS
-- Utilisez des réseaux Docker appropriés
-
-## 📚 Documentation
-
-- [Documentation Infrastructure](infrastructure/README.md)
-- [Documentation API](backend/api-gateway/README.md) (à venir)
-- [Guide de Développement](docs/development.md) (à venir)
-
-## 🤝 Contribution
-
-1. Fork le projet
-2. Créez une branche pour votre fonctionnalité
-3. Committez vos changements
-4. Poussez vers la branche
-5. Ouvrez une Pull Request
-
-## 📄 Licence
-
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
-
-## 🆘 Support
-
-Pour toute question ou problème :
-1. Consultez la documentation
-2. Vérifiez les logs : `docker-compose --env-file .env logs`
-3. Testez les connexions : `./test-connection.sh`
-4. Ouvrez une issue sur GitHub
-=======
-# cyber-cafe-management
-Ceci est une plateforme pour gerer les suivi des cyber cafés
->>>>>>> 1aa4d0960c17ac33e85c1d1ab08888f87c77a1d2
+## Contribution
+Créez une branche dédiée, testez vos changements et ouvrez une Pull Request vers `main`.

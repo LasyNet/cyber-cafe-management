@@ -1,26 +1,42 @@
-# app/core/config.py
+"""Validated runtime configuration for the authentication service."""
+import os
 
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
 
-# Classe de configuration qui charge les variables d'environnement
+
 class Settings(BaseSettings):
-    # URL de la base de données PostgreSQL
     DATABASE_URL: str
-
-    # Clé secrète pour la signature des tokens JWT
     SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, gt=0)
 
-    # Algorithme de signature pour les tokens JWT (ex: HS256)
-    ALGORITHM: str
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
-    # Durée de validité du token d'accès en minutes
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    @model_validator(mode="after")
+    def validate_security_settings(self):
+        if self.ALGORITHM != "HS256":
+            raise ValueError("ALGORITHM must be HS256 for this service configuration.")
 
-    # Spécifie le fichier .env à charger.
-    # `case_sensitive=True` est recommandé pour les noms de variables d'environnement.
-    # `env_file_encoding='utf-8'` assure la compatibilité avec les caractères spéciaux si besoin.
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8', extra="ignore")
+        environment = os.getenv("ENVIRONMENT", "development").strip().lower()
+        placeholders = {
+            "", "votre_super_cle_secrete_et_longue_pour_jwt",
+            "your-super-secret-jwt-key-change-in-production",
+            "changeme", "change-me", "change_me_setup_env",
+        }
+        if environment in {"production", "prod"}:
+            if self.SECRET_KEY.strip().lower() in placeholders:
+                raise ValueError("SECRET_KEY must be replaced with a unique production secret.")
+            if len(self.SECRET_KEY.encode("utf-8")) < 32:
+                raise ValueError("SECRET_KEY must contain at least 32 bytes in production.")
 
-# Crée une instance des paramètres
+        if not self.DATABASE_URL.strip():
+            raise ValueError("DATABASE_URL must not be empty.")
+        return self
+
+
 settings = Settings()
