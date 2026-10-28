@@ -14,6 +14,20 @@ const nav = [
   { label: 'Paiements' as Page, icon: CreditCard }, { label: 'Facturation' as Page, icon: FileText }, { label: 'Rapports' as Page, icon: Activity },
   { label: 'Paramètres' as Page, icon: Settings2 },
 ];
+const pageSlugs: Record<Page, string> = {
+  'Vue d’ensemble': 'dashboard',
+  Ordinateurs: 'ordinateurs',
+  Sessions: 'sessions',
+  Clients: 'clients',
+  Paiements: 'paiements',
+  Facturation: 'facturation',
+  Rapports: 'rapports',
+  Paramètres: 'parametres',
+};
+const pageFromHash = (): Page => {
+  const slug = window.location.hash.slice(1);
+  return (Object.entries(pageSlugs).find(([, value]) => value === slug)?.[0] as Page | undefined) ?? 'Vue d’ensemble';
+};
 const money = (n: number, currency = 'Ar') => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(n) + ' ' + currency;
 const dateTime = (value: string) => new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
 const elapsed = (startedAt: string) => {
@@ -23,7 +37,7 @@ const elapsed = (startedAt: string) => {
 
 function App() {
   const [store, setStore] = useState<Store>(() => readStore());
-  const [activePage, setActivePage] = useState<Page>('Vue d’ensemble');
+  const [activePage, setActivePage] = useState<Page>(() => pageFromHash());
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'Tous' | ComputerStatus>('Tous');
   const [toast, setToast] = useState('');
@@ -46,6 +60,15 @@ function App() {
   const [selectedInvoice, setSelectedInvoice] = useState<Payment | null>(null);
 
   useEffect(() => { if (!writeStore(store)) setToast('Stockage local indisponible : vérifie les paramètres du navigateur.'); }, [store]);
+  useEffect(() => {
+    const slug = pageSlugs[activePage];
+    if (window.location.hash.slice(1) !== slug) window.history.replaceState(null, '', `#${slug}`);
+  }, [activePage]);
+  useEffect(() => {
+    const syncPageWithHash = () => setActivePage(pageFromHash());
+    window.addEventListener('hashchange', syncPageWithHash);
+    return () => window.removeEventListener('hashchange', syncPageWithHash);
+  }, []);
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(''), 3200); return () => window.clearTimeout(timer); }, [toast]);
 
   const activeSessions = store.sessions.filter(s => s.status === 'En cours');
