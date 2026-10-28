@@ -9,7 +9,7 @@ import { Sidebar } from './components/Sidebar';
 import { InvoiceModal } from './components/InvoiceModal';
 import { type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './data/mockStore';
 import {
-  Activity, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, RotateCcw, Pencil, Play
+  Activity, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, RotateCcw, Pencil, Play
 } from 'lucide-react';
 
 function App() {
