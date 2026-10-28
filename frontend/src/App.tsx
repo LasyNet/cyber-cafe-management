@@ -30,6 +30,7 @@ function App() {
   const [formName, setFormName] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formEmail, setFormEmail] = useState('');
+  const [formMacAddress, setFormMacAddress] = useState('');
   const [formComputer, setFormComputer] = useState('');
   const [formClient, setFormClient] = useState('');
   const [formHours, setFormHours] = useState('1');
@@ -47,29 +48,32 @@ function App() {
   const totalPaid = store.payments.filter(p => p.status === 'Payé').reduce((sum, p) => sum + p.amount, 0);
   const availableCount = store.computers.filter(c => c.status === 'Disponible').length;
   const clientsToday = new Set(store.sessions.filter(s => new Date(s.startedAt).toDateString() === today).map(s => s.clientId)).size;
-  const filteredComputers = useMemo(() => store.computers.filter(c => (statusFilter === 'Tous' || c.status === statusFilter) && (c.name + c.id + c.status).toLowerCase().includes(query.toLowerCase())), [store.computers, statusFilter, query]);
+  const filteredComputers = useMemo(() => store.computers.filter(c => (statusFilter === 'Tous' || c.status === statusFilter) && (c.name + c.id + c.macAddress + c.status).toLowerCase().includes(query.toLowerCase())), [store.computers, statusFilter, query]);
   const getClient = (id: string) => store.clients.find(c => c.id === id);
   const getComputer = (id: string) => store.computers.find(c => c.id === id);
   const notify = (message: string) => setToast(message);
   const openModal = (kind: typeof modal) => {
-    setEditingId(null); setFormName(''); setFormPhone(''); setFormEmail(''); setFormStatus('Disponible');
+    setEditingId(null); setFormName(''); setFormPhone(''); setFormEmail(''); setFormMacAddress(''); setFormStatus('Disponible');
     setFormCafe(store.settings.cafeName); setFormRate(String(store.settings.hourlyRate));
     setFormComputer(store.computers.find(c => c.status === 'Disponible')?.id ?? '');
     setFormClient(store.clients[0]?.id ?? ''); setFormHours('1'); setModal(kind);
   };
   const addComputer = () => {
     if (!formName.trim()) return notify('Le nom de l’ordinateur est obligatoire.');
+    const normalizedMac = formMacAddress.trim().toUpperCase().replace(/-/g, ':');
+    if (!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(normalizedMac)) return notify('Saisis une adresse MAC valide (ex. 00:1A:2B:3C:4D:5E).');
+    if (store.computers.some(c => c.id !== editingId && c.macAddress && c.macAddress.toUpperCase() === normalizedMac)) return notify('Cette adresse MAC est déjà attribuée à un autre ordinateur.');
     if (editingId) {
-      setStore(s => ({ ...s, computers: s.computers.map(c => c.id === editingId ? { ...c, name: formName.trim(), status: formStatus } : c) }));
+      setStore(s => ({ ...s, computers: s.computers.map(c => c.id === editingId ? { ...c, name: formName.trim(), macAddress: normalizedMac, status: formStatus } : c) }));
       notify('Ordinateur modifié.');
     } else {
-      const computer: Computer = { id: newId('PC'), name: formName.trim(), status: formStatus };
+      const computer: Computer = { id: newId('PC'), name: formName.trim(), macAddress: normalizedMac, status: formStatus };
       setStore(s => ({ ...s, computers: [...s.computers, computer] })); notify('Ordinateur ajouté.');
     }
     setModal(null);
   };
   const editComputer = (computer: Computer) => {
-    setEditingId(computer.id); setFormName(computer.name); setFormStatus(computer.status); setModal('computer');
+    setEditingId(computer.id); setFormName(computer.name); setFormMacAddress(computer.macAddress ?? ''); setFormStatus(computer.status); setModal('computer');
   };
   const deleteComputer = (computer: Computer) => {
     if (store.sessions.some(s => s.computerId === computer.id && s.status === 'En cours')) return notify('Termine la session avant de supprimer ce poste.');
