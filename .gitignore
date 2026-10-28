@@ -1,2 +1,34 @@
-# Ignorer tous les node_modules
+# Secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Dependencies and build outputs
 node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+coverage/
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Logs, caches, temp files
+*.log
+logs/
+.cache/
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
