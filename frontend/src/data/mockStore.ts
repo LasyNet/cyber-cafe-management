@@ -8,7 +8,6 @@ export type Payment = { id: string; sessionId: string; clientId: string; amount:
 export type AppSettings = { cafeName: string; hourlyRate: number; currency: string };
 export type Store = { computers: Computer[]; clients: Client[]; sessions: Session[]; payments: Payment[]; settings: AppSettings };
 
-const KEY = 'lasynet-cybercafe-store-v1';
 const now = new Date();
 const ago = (hours: number) => new Date(now.getTime() - hours * 3600000).toISOString();
 export const initialStore: Store = {
