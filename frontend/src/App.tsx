@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import {
-  Activity, ArrowDownRight, ArrowUpRight, ArrowRight, Bell, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronRight,
+  Activity, ArrowUpRight, ArrowRight, Bell, Check, CheckCircle2, ChevronDown, ChevronRight,
   CircleHelp, Clock3, CreditCard, Download, FileText, Printer, LayoutDashboard, LifeBuoy, Monitor, MoreHorizontal,
-  Plus, Search, Settings2, ShieldCheck, Trash2, Users, Wifi, X, Zap, RotateCcw, Pencil, Play, Square, Gauge,
+  Plus, Search, Settings2, ShieldCheck, Trash2, Users, Wifi, X, RotateCcw, Pencil, Play, Gauge,
 } from 'lucide-react';
 import { newId, readStore, resetStore, writeStore, type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './data/mockStore';
 
