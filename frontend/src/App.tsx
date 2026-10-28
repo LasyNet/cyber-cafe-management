@@ -1,8 +1,16 @@
-import {
-  useEffect, useMemo, dateTime, resetStore, pageFromHash, pageSlugs, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, RotateCcw, Pencil, Play
-} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { money, dateTime, elapsed } from './utils/formatters';
+import { newId } from './utils/id';
+import { readStore, resetStore, writeStore } from './services/storeService';
+import { pageFromHash, pageSlugs, type Page } from './navigation';
+import { ModuleHeader } from './components/ModuleHeader';
+import { LandingPage } from './components/LandingPage';
+import { Sidebar } from './components/Sidebar';
+import { InvoiceModal } from './components/InvoiceModal';
 import { type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './data/mockStore';
-
+import {
+  Activity, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, RotateCcw, Pencil, Play
+} from 'lucide-react';
 
 function App() {
   const [store, setStore] = useState<Store>(() => readStore());
