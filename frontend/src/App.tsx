@@ -103,6 +103,7 @@ function App() {
     if (!formComputer || !formClient) return notify('Ajoute un client et un ordinateur disponible avant de démarrer.');
     const computer = getComputer(formComputer);
     if (!computer || computer.status !== 'Disponible') return notify('Cet ordinateur n’est plus disponible.');
+    if (!computer.macAddress) return notify('Renseigne l’adresse MAC de cet ordinateur avant de démarrer une session.');
     const hours = formHours === 'libre' ? null : Number(formHours);
     const session: Session = { id: newId('SES'), computerId: computer.id, clientId: formClient, startedAt: new Date().toISOString(), plannedHours: hours, status: 'En cours', amount: 0 };
     setStore(s => ({ ...s, sessions: [session, ...s.sessions], computers: s.computers.map(c => c.id === computer.id ? { ...c, status: 'En cours' } : c) }));
