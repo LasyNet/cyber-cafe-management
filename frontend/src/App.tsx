@@ -1,39 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { jsPDF } from 'jspdf';
+import { money, dateTime, elapsed } from './utils/formatters';
+import { newId } from './utils/id';
+import { readStore, resetStore, writeStore } from './services/storeService';
+import { nav, pageFromHash, pageSlugs, type Page } from './navigation';
+import { ModuleHeader } from './components/ModuleHeader';
 import {
   Activity, ArrowDownRight, ArrowUpRight, ArrowRight, Bell, CalendarDays, Check, CheckCircle2, ChevronDown, ChevronRight,
   CircleHelp, Clock3, CreditCard, Download, FileText, Printer, LayoutDashboard, LifeBuoy, Monitor, MoreHorizontal,
   Plus, Search, Settings2, ShieldCheck, Trash2, Users, Wifi, X, Zap, RotateCcw, Pencil, Play, Square, Gauge,
 } from 'lucide-react';
-import { newId, readStore, resetStore, writeStore, type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './data/mockStore';
+import { type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './data/mockStore';
 
-type Page = 'Vue d’ensemble' | 'Ordinateurs' | 'Sessions' | 'Clients' | 'Paiements' | 'Facturation' | 'Rapports' | 'Paramètres';
-const nav = [
-  { label: 'Vue d’ensemble' as Page, icon: LayoutDashboard }, { label: 'Ordinateurs' as Page, icon: Monitor },
-  { label: 'Sessions' as Page, icon: Clock3 }, { label: 'Clients' as Page, icon: Users },
-  { label: 'Paiements' as Page, icon: CreditCard }, { label: 'Facturation' as Page, icon: FileText }, { label: 'Rapports' as Page, icon: Activity },
-  { label: 'Paramètres' as Page, icon: Settings2 },
-];
-const pageSlugs: Record<Page, string> = {
-  'Vue d’ensemble': 'dashboard',
-  Ordinateurs: 'ordinateurs',
-  Sessions: 'sessions',
-  Clients: 'clients',
-  Paiements: 'paiements',
-  Facturation: 'facturation',
-  Rapports: 'rapports',
-  Paramètres: 'parametres',
-};
-const pageFromHash = (): Page => {
-  const slug = window.location.hash.slice(1);
-  return (Object.entries(pageSlugs).find(([, value]) => value === slug)?.[0] as Page | undefined) ?? 'Vue d’ensemble';
-};
-const money = (n: number, currency = 'Ar') => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(n) + ' ' + currency;
-const dateTime = (value: string) => new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
-const elapsed = (startedAt: string) => {
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 60000));
-  return `${String(Math.floor(minutes / 60)).padStart(2, '0')} h ${String(minutes % 60).padStart(2, '0')}`;
-};
 
 function App() {
   const [store, setStore] = useState<Store>(() => readStore());
@@ -428,10 +406,6 @@ function printInvoicePdf(payment: Payment, cafeName: string, client: InvoiceClie
   const doc = buildInvoicePdf(payment, cafeName, client);
   doc.autoPrint();
   window.open(doc.output('bloburl'), '_blank', 'noopener,noreferrer');
-}
-
-function ModuleHeader({ title, subtitle, action, onAction, children }: { title: string; subtitle: string; action: string; onAction: () => void; children: React.ReactNode }) {
-  return <><section className="welcome-row"><div><div className="eyebrow"><span className="live-dot"/> LasyNet · GESTION</div><h1>{title}</h1><p className="page-subtitle">{subtitle}</p></div><button className="primary-button" onClick={onAction}><Plus size={18}/>{action}</button></section><section className="panel computers-panel module-panel">{children}</section></>;
 }
 
 export default App;
