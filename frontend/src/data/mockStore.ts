@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 export type ComputerStatus = 'Disponible' | 'En cours' | 'Maintenance';
-export type Computer = { id: string; name: string; status: ComputerStatus };
+export type Computer = { id: string; name: string; macAddress: string; status: ComputerStatus };
 export type Client = { id: string; name: string; phone: string; email: string; createdAt: string };
 export type SessionStatus = 'En cours' | 'Terminée';
 export type Session = { id: string; computerId: string; clientId: string; startedAt: string; endedAt?: string; plannedHours: number | null; status: SessionStatus; amount: number };
@@ -14,12 +14,12 @@ const now = new Date();
 const ago = (hours: number) => new Date(now.getTime() - hours * 3600000).toISOString();
 const seed: Store = {
   computers: [
-    { id: 'PC-01', name: 'Station 01', status: 'En cours' }, { id: 'PC-02', name: 'Station 02', status: 'Disponible' },
-    { id: 'PC-03', name: 'Station 03', status: 'En cours' }, { id: 'PC-04', name: 'Station 04', status: 'En cours' },
-    { id: 'PC-05', name: 'Station 05', status: 'Maintenance' }, { id: 'PC-06', name: 'Station 06', status: 'Disponible' },
-    { id: 'PC-07', name: 'Station 07', status: 'Disponible' }, { id: 'PC-08', name: 'Station 08', status: 'Disponible' },
-    { id: 'PC-09', name: 'Station 09', status: 'Disponible' }, { id: 'PC-10', name: 'Station 10', status: 'Disponible' },
-    { id: 'PC-11', name: 'Station 11', status: 'Disponible' }, { id: 'PC-12', name: 'Station 12', status: 'Disponible' },
+    { id: 'PC-01', name: 'Station 01', macAddress: '02:4C:4E:00:00:01', status: 'En cours' }, { id: 'PC-02', name: 'Station 02', macAddress: '02:4C:4E:00:00:02', status: 'Disponible' },
+    { id: 'PC-03', name: 'Station 03', macAddress: '02:4C:4E:00:00:03', status: 'En cours' }, { id: 'PC-04', name: 'Station 04', macAddress: '02:4C:4E:00:00:04', status: 'En cours' },
+    { id: 'PC-05', name: 'Station 05', macAddress: '02:4C:4E:00:00:05', status: 'Maintenance' }, { id: 'PC-06', name: 'Station 06', macAddress: '02:4C:4E:00:00:06', status: 'Disponible' },
+    { id: 'PC-07', name: 'Station 07', macAddress: '02:4C:4E:00:00:07', status: 'Disponible' }, { id: 'PC-08', name: 'Station 08', macAddress: '02:4C:4E:00:00:08', status: 'Disponible' },
+    { id: 'PC-09', name: 'Station 09', macAddress: '02:4C:4E:00:00:09', status: 'Disponible' }, { id: 'PC-10', name: 'Station 10', macAddress: '02:4C:4E:00:00:0A', status: 'Disponible' },
+    { id: 'PC-11', name: 'Station 11', macAddress: '02:4C:4E:00:00:0B', status: 'Disponible' }, { id: 'PC-12', name: 'Station 12', macAddress: '02:4C:4E:00:00:0C', status: 'Disponible' },
   ],
   clients: [
     { id: 'CL-001', name: 'Andry Rakoto', phone: '034 12 345 67', email: 'andry@example.com', createdAt: ago(72) },
@@ -47,7 +47,7 @@ export function readStore(): Store {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<Store>;
-      return { ...seed, ...parsed, settings: { ...seed.settings, ...parsed.settings } };
+      return { ...seed, ...parsed, computers: (parsed.computers ?? seed.computers).map(c => ({ ...c, macAddress: c.macAddress ?? '' })), settings: { ...seed.settings, ...parsed.settings } };
     }
   } catch (error) {
     console.warn('Impossible de lire les données locales LasyNet.', error);
