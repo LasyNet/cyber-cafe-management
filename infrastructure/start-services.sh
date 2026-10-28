@@ -1,53 +1,33 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "🚀 Démarrage des services de base de données pour le Cyber Café..."
+echo "Démarrage des services Cyber Café..."
 
-# Vérifier si le fichier .env existe
-if [ ! -f ".env" ]; then
-    echo "❌ Le fichier .env n'existe pas."
-    echo "💡 Exécutez d'abord : ./setup-env.sh"
-    exit 1
+if [[ ! -f .env ]]; then
+  echo "Erreur : le fichier .env n'existe pas. Lancez d'abord ./setup-env.sh." >&2
+  exit 1
 fi
 
-# Vérifier si Docker est en cours d'exécution
-if ! docker info > /dev/null 2>&1; then
-    echo "❌ Docker n'est pas en cours d'exécution. Veuillez démarrer Docker Desktop."
-    exit 1
+if ! docker info >/dev/null 2>&1; then
+  echo "Erreur : Docker n'est pas démarré." >&2
+  exit 1
 fi
 
-# Charger les variables d'environnement
+set -a
+# shellcheck disable=SC1091
 source .env
+set +a
 
-# Créer les dossiers de données s'ils n'existent pas
-mkdir -p ${DATA_VOLUME_PATH}/auth
-mkdir -p ${DATA_VOLUME_PATH}/clients
-mkdir -p ${DATA_VOLUME_PATH}/computers
-mkdir -p ${DATA_VOLUME_PATH}/sessions
-mkdir -p ${DATA_VOLUME_PATH}/reporting
-mkdir -p ${DATA_VOLUME_PATH}/redis
+: "${DATA_VOLUME_PATH:?DATA_VOLUME_PATH doit être défini dans .env}"
 
-# Arrêter et supprimer les conteneurs existants
-echo "🔄 Arrêt des conteneurs existants..."
-docker-compose down
+mkdir -p -- "${DATA_VOLUME_PATH}/auth" "${DATA_VOLUME_PATH}/clients" \
+  "${DATA_VOLUME_PATH}/computers" "${DATA_VOLUME_PATH}/sessions" \
+  "${DATA_VOLUME_PATH}/reporting" "${DATA_VOLUME_PATH}/redis"
 
-# Démarrer les services
-echo "✅ Démarrage des services..."
-docker-compose --env-file .env up -d
+docker compose --env-file .env down --remove-orphans
+docker compose --env-file .env up -d --build
 
-# Attendre que les services soient prêts
-echo "⏳ Attente du démarrage des services..."
-sleep 10
-
-# Vérifier le statut des conteneurs
-echo "📊 Statut des conteneurs :"
-docker-compose ps
-
-echo "🎉 Services démarrés avec succès !"
-echo ""
-echo "📋 Ports des services :"
-echo "  - Auth DB: ${AUTH_DB_HOST}:${AUTH_DB_PORT}"
-echo "  - Clients DB: ${CLIENTS_DB_HOST}:${CLIENTS_DB_PORT}"
-echo "  - Computers DB: ${COMPUTERS_DB_HOST}:${COMPUTERS_DB_PORT}"
-echo "  - Sessions DB: ${SESSIONS_DB_HOST}:${SESSIONS_DB_PORT}"
-echo "  - Reporting DB: ${REPORTING_DB_HOST}:${REPORTING_DB_PORT}"
-echo "  - Redis: ${REDIS_HOST}:${REDIS_PORT}" 
+echo "État des conteneurs :"
+docker compose --env-file .env ps
+echo "Services démarrés. Les ports publiés sont limités à localhost."
+echo "Ports : Auth DB ${AUTH_DB_PORT}, Clients DB ${CLIENTS_DB_PORT}, Redis ${REDIS_PORT}, Auth API ${AUTH_SERVICE_PORT}, Clients API ${CLIENTS_SERVICE_PORT}"
