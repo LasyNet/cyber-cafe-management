@@ -208,7 +208,8 @@ function downloadInvoicePdf(payment: Payment, cafeName: string, client: InvoiceC
   const invoiceRef = `FAC-${payment.id}`;
   const date = new Date(payment.paidAt);
   const formattedDate = Number.isNaN(date.getTime()) ? String(payment.paidAt) : date.toLocaleString('fr-FR');
-  const amount = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(payment.amount) + ' Ar';
+  const formattedAmount = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(payment.amount).replace(/[\u00a0\u202f]/g, ' ');
+  const amount = `${formattedAmount} Ar`;
   doc.setFillColor(220, 38, 38);
   doc.roundedRect(margin, 17, 15, 15, 2, 2, 'F');
   doc.setTextColor(255, 255, 255);
