@@ -1,5 +1,3 @@
-import { useEffect, useMemo, useState } from 'react';
-
 export type ComputerStatus = 'Disponible' | 'En cours' | 'Maintenance';
 export type ComputerType = 'Interne' | 'Externe';
 export type Computer = { id: string; name: string; type: ComputerType; macAddress: string; status: ComputerStatus };
