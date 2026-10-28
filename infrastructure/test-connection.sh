@@ -1,85 +1,72 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -uo pipefail
 
-echo "🧪 Test des connexions aux services..."
+echo "Vérification des connexions aux services..."
 
-# Vérifier si le fichier .env existe
-if [ ! -f ".env" ]; then
-    echo "❌ Le fichier .env n'existe pas."
-    echo "💡 Exécutez d'abord : ./setup-env.sh"
-    exit 1
+if [[ ! -f .env ]]; then
+  echo "Erreur : le fichier .env n'existe pas. Lancez d'abord ./setup-env.sh." >&2
+  exit 1
 fi
 
-# Charger les variables d'environnement
+set -a
+# shellcheck disable=SC1091
 source .env
+set +a
 
-# Fonction pour tester une connexion PostgreSQL
+failures=0
+
+for command_name in nc psql redis-cli; do
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    echo "Erreur : commande requise introuvable : $command_name" >&2
+    failures=$((failures + 1))
+  fi
+done
+
 test_postgres() {
-    local service_name=$1
-    local host=$2
-    local port=$3
-    local db_name=$4
-    local user=$5
-    local password=$6
-    
-    echo "🔍 Test de connexion à $service_name..."
-    
-    # Vérifier si le port est ouvert
-    if nc -z $host $port 2>/dev/null; then
-        echo "✅ Port $port ouvert pour $service_name"
-        
-        # Tester la connexion PostgreSQL
-        if command -v psql >/dev/null 2>&1; then
-            PGPASSWORD=$password psql -h $host -p $port -U $user -d $db_name -c "SELECT version();" >/dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                echo "✅ Connexion PostgreSQL réussie pour $service_name"
-            else
-                echo "❌ Échec de connexion PostgreSQL pour $service_name"
-            fi
-        else
-            echo "⚠️  psql non installé, impossible de tester la connexion PostgreSQL"
-        fi
+  local name="$1" host="$2" port="$3" database="$4"
+  if ! command -v nc >/dev/null 2>&1; then
+    return
+  fi
+
+  echo "Test PostgreSQL : $name ($host:$port)"
+  if ! nc -z "$host" "$port" 2>/dev/null; then
+    echo "ÉCHEC : port $port inaccessible pour $name"
+    failures=$((failures + 1))
+    return
+  fi
+
+  if command -v psql >/dev/null 2>&1; then
+    if PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$host" -p "$port" -U "$POSTGRES_USER" -d "$database" -v ON_ERROR_STOP=1 -c "SELECT 1;" >/dev/null 2>&1; then
+      echo "OK : connexion PostgreSQL $name"
     else
-        echo "❌ Port $port fermé pour $service_name"
+      echo "ÉCHEC : authentification/connexion PostgreSQL $name"
+      failures=$((failures + 1))
     fi
-    echo ""
+  fi
 }
 
-# Fonction pour tester Redis
-test_redis() {
-    echo "🔍 Test de connexion à Redis..."
-    
-    if nc -z $REDIS_HOST $REDIS_PORT 2>/dev/null; then
-        echo "✅ Port $REDIS_PORT ouvert pour Redis"
-        
-        if command -v redis-cli >/dev/null 2>&1; then
-            redis-cli -h $REDIS_HOST -p $REDIS_PORT ping >/dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                echo "✅ Connexion Redis réussie"
-            else
-                echo "❌ Échec de connexion Redis"
-            fi
-        else
-            echo "⚠️  redis-cli non installé, impossible de tester la connexion Redis"
-        fi
-    else
-        echo "❌ Port $REDIS_PORT fermé pour Redis"
-    fi
-    echo ""
-}
+test_postgres "Auth DB" "$AUTH_DB_HOST" "$AUTH_DB_PORT" "$AUTH_DB_NAME"
+test_postgres "Clients DB" "$CLIENTS_DB_HOST" "$CLIENTS_DB_PORT" "$CLIENTS_DB_NAME"
+test_postgres "Computers DB" "$COMPUTERS_DB_HOST" "$COMPUTERS_DB_PORT" "$COMPUTERS_DB_NAME"
+test_postgres "Sessions DB" "$SESSIONS_DB_HOST" "$SESSIONS_DB_PORT" "$SESSIONS_DB_NAME"
+test_postgres "Reporting DB" "$REPORTING_DB_HOST" "$REPORTING_DB_PORT" "$REPORTING_DB_NAME"
 
-# Tests des bases de données PostgreSQL
-test_postgres "Auth DB" $AUTH_DB_HOST $AUTH_DB_PORT $AUTH_DB_NAME $POSTGRES_USER $POSTGRES_PASSWORD
-test_postgres "Clients DB" $CLIENTS_DB_HOST $CLIENTS_DB_PORT $CLIENTS_DB_NAME $POSTGRES_USER $POSTGRES_PASSWORD
-test_postgres "Computers DB" $COMPUTERS_DB_HOST $COMPUTERS_DB_PORT $COMPUTERS_DB_NAME $POSTGRES_USER $POSTGRES_PASSWORD
-test_postgres "Sessions DB" $SESSIONS_DB_HOST $SESSIONS_DB_PORT $SESSIONS_DB_NAME $POSTGRES_USER $POSTGRES_PASSWORD
-test_postgres "Reporting DB" $REPORTING_DB_HOST $REPORTING_DB_PORT $REPORTING_DB_NAME $POSTGRES_USER $POSTGRES_PASSWORD
+echo "Test Redis ($REDIS_HOST:$REDIS_PORT)"
+if command -v nc >/dev/null 2>&1 && ! nc -z "$REDIS_HOST" "$REDIS_PORT" 2>/dev/null; then
+  echo "ÉCHEC : port Redis inaccessible"
+  failures=$((failures + 1))
+elif command -v redis-cli >/dev/null 2>&1; then
+  if REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" ping 2>/dev/null | grep -qx PONG; then
+    echo "OK : connexion Redis authentifiée"
+  else
+    echo "ÉCHEC : connexion/authentification Redis"
+    failures=$((failures + 1))
+  fi
+fi
 
-# Test Redis
-test_redis
+if (( failures > 0 )); then
+  echo "Échec : $failures vérification(s) n'ont pas abouti."
+  exit 1
+fi
 
-echo "🎉 Tests terminés !"
-echo ""
-echo "💡 Si certains tests échouent, vérifiez que :"
-echo "   - Docker Desktop est démarré"
-echo "   - Les services sont en cours d'exécution (./start-services.sh)"
-echo "   - Les ports ne sont pas utilisés par d'autres applications" 
+echo "Toutes les vérifications de connexion ont réussi."
