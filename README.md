@@ -1,41 +1,38 @@
 # 🖥️ Gestion de cyber-café
 
-Plateforme de gestion de cyber-café organisée en services backend. Le dépôt contient actuellement un service d'authentification FastAPI et un service de gestion des clients NestJS, ainsi que l'infrastructure PostgreSQL/Redis pour le développement. Les services ordinateurs, sessions, passerelle API et reporting restent à implémenter ou à intégrer.
+Plateforme de gestion de cyber-café organisée en services backend et une interface web React. Le dépôt contient un service d'authentification FastAPI, un service de gestion des clients NestJS et une première interface frontend.
 
 ## Architecture actuelle
+- **Frontend** : React, TypeScript, Vite et Lucide. Tableau de bord en cours de construction avec données de démonstration.
 - **Auth Service** : FastAPI, JWT et PostgreSQL.
 - **Clients Service** : NestJS, TypeORM et PostgreSQL.
-- **Infrastructure** : Docker Compose, instances PostgreSQL et Redis.
-- **Frontend / autres services** : à développer.
+- **Infrastructure** : scripts et configuration Docker Compose (optionnels pour le développement local sans conteneurs).
+- **À venir** : connexion des données réelles, services ordinateurs/sessions/paiements, passerelle API et reporting.
 
-## Prérequis
-- Docker Desktop ou Docker Engine avec le plugin Compose
-- Git
-- OpenSSL
+## Démarrer le frontend sans Docker
 
-## Démarrage local
-Depuis la racine du dépôt :
+Prérequis : Node.js 20+ et npm.
+
 ```bash
 git clone https://github.com/LasyNet/cyber-cafe-management.git
-cd cyber-cafe-management/infrastructure
-chmod +x setup-env.sh start-services.sh stop-services.sh test-connection.sh
-./setup-env.sh
-./start-services.sh
-./test-connection.sh
+cd cyber-cafe-management/frontend
+npm install
+npm run dev
 ```
 
-Le script crée `.env` à partir de `env.example` et génère des mots de passe PostgreSQL/Redis et une clé JWT aléatoires. Pour arrêter les services sans effacer les données, lancez `./stop-services.sh`.
+Ouvrir l'adresse affichée par Vite (par défaut http://localhost:5173).
 
-> **Attention :** `docker compose down -v` supprime les volumes et peut entraîner une perte de données.
+Pour vérifier le build de production :
 
-## Configuration et sécurité
-- Le modèle de configuration est `infrastructure/env.example`; ne commitez jamais les vrais fichiers `.env`.
-- Pour le service d'authentification en local, configurez les variables requises à partir de `backend/auth-service/.env.example`. Compose injecte celles-ci depuis `infrastructure/.env`.
-- Les ports Docker sont exposés uniquement sur l'interface locale.
-- Redis exige un mot de passe dans Compose.
-- Cette configuration est destinée au développement local. Avant la production, prévoyez TLS, gestion des secrets, migrations, sauvegardes et supervision.
+```bash
+npm run build
+npm run preview
+```
 
-## Développement
+> La première version du frontend est une démonstration interactive. Les sessions, indicateurs et ordinateurs utilisent des données locales temporaires ; aucune donnée n'est encore envoyée aux services backend.
+
+## Services backend
+
 ### Auth Service
 ```bash
 cd backend/auth-service
@@ -45,6 +42,8 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8001
 ```
 
+Configurez d'abord les variables requises dans `backend/auth-service/.env` à partir de `.env.example`.
+
 ### Clients Service
 ```bash
 cd backend/clients-service
@@ -52,7 +51,13 @@ npm ci
 npm run build
 npm test -- --runInBand
 ```
-`npm run lint` vérifie sans modifier les fichiers; `npm run lint:fix` applique les corrections.
+
+Configurez les variables de connexion PostgreSQL dans `backend/clients-service/.env` à partir de `env.example`.
+
+## Configuration et sécurité
+- Ne commitez jamais les fichiers `.env` ni les identifiants de base de données.
+- La connexion à Neon/PostgreSQL sera configurée séparément pour chaque service.
+- Avant une mise en production, prévoir TLS, migrations, sauvegardes, gestion des secrets et supervision.
 
 ## Contribution
 Créez une branche dédiée, testez vos changements et ouvrez une Pull Request vers `main`.
