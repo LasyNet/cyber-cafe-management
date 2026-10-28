@@ -62,12 +62,16 @@ function App() {
   useEffect(() => { if (!writeStore(store)) setToast('Stockage local indisponible : vérifie les paramètres du navigateur.'); }, [store]);
   useEffect(() => {
     const slug = pageSlugs[activePage];
-    if (window.location.hash.slice(1) !== slug) window.history.replaceState(null, '', `#${slug}`);
+    if (window.location.hash.slice(1) !== slug) window.history.pushState(null, '', `#${slug}`);
   }, [activePage]);
   useEffect(() => {
-    const syncPageWithHash = () => setActivePage(pageFromHash());
-    window.addEventListener('hashchange', syncPageWithHash);
-    return () => window.removeEventListener('hashchange', syncPageWithHash);
+    const syncPageWithHistory = () => setActivePage(pageFromHash());
+    window.addEventListener('popstate', syncPageWithHistory);
+    window.addEventListener('hashchange', syncPageWithHistory);
+    return () => {
+      window.removeEventListener('popstate', syncPageWithHistory);
+      window.removeEventListener('hashchange', syncPageWithHistory);
+    };
   }, []);
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(''), 3200); return () => window.clearTimeout(timer); }, [toast]);
 
