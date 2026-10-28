@@ -162,6 +162,7 @@ tr:hover td{background:#172338}
 .client-select-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .client-select-col > .field-label { margin-bottom: 0; }
 .client-select-row { display: flex; align-items: stretch; gap: 8px; min-width: 0; }
-.client-select-row select { flex: 1; width: 100%; min-width: 0; border-radius: 8px; }
+.client-select-row select { flex: 1; width: 100%; min-width: 0; border-radius: 8px; padding-left: 12px; }
+.client-select-row select option { padding-left: 12px; }
 .client-select-row .add-session-client { flex-shrink: 0; align-self: stretch; margin: 0; }
 @media (max-width: 720px) { .client-select-row { flex-direction: row; align-items: stretch; } .client-select-row .add-session-client { align-self: stretch; } }
