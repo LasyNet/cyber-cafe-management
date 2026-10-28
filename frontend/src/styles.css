@@ -166,3 +166,23 @@ tr:hover td{background:#172338}
 .client-select-row select option { padding-left: 12px; }
 .client-select-row .add-session-client { flex-shrink: 0; align-self: stretch; margin: 0; }
 @media (max-width: 720px) { .client-select-row { flex-direction: row; align-items: stretch; } .client-select-row .add-session-client { align-self: stretch; } }
+
+
+/* Payment management */
+.payment-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px 16px}
+.payment-toolbar .filter-tabs{flex-wrap:wrap}
+.payment-tab-count{display:inline-grid;place-items:center;min-width:17px;height:17px;margin-left:6px;padding:0 4px;border-radius:5px;background:#334155;color:#e2e8f0;font-size:9px}
+.filter-tabs button.selected .payment-tab-count{background:#fff3;color:#fff}
+.payment-results{font-size:10px;color:#94a3b8;white-space:nowrap}
+.payment-client{display:grid;gap:4px}
+.payment-client strong{font-size:10px;color:#f1f5f9}
+.payment-client small,.payment-session-ref{font-size:9px;color:#94a3b8}
+.payment-amount{color:#f8fafc;white-space:nowrap}
+.payment-method{display:inline-flex;align-items:center;gap:7px;color:#cbd5e1;font-size:10px;white-space:nowrap}
+.payment-method svg{color:#f87171}
+.payment-method-select{min-width:132px;max-width:155px;padding:8px 25px 8px 10px;border:1px solid #475569;border-radius:8px;background:#111c2e;color:#f1f5f9;font-size:10px}
+.payment-actions{align-items:center;flex-wrap:nowrap}
+.payment-actions .status-pill{white-space:nowrap}
+.payment-actions .small-action{background:#dc2626;border-color:#dc2626;color:#fff;padding:7px 9px}
+.payment-actions .small-action:hover{background:#b91c1c}
+@media(max-width:640px){.payment-toolbar{padding:0 14px 14px;align-items:flex-start;flex-direction:column}.payment-toolbar .filter-tabs{max-width:100%;overflow-x:auto;flex-wrap:nowrap}.payment-results{align-self:flex-end}.payment-method-select{min-width:120px}.payment-actions{align-items:flex-start;flex-direction:column}}
