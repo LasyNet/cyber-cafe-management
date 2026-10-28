@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { jsPDF } from 'jspdf';
 import {
   Activity, ArrowDownRight, ArrowUpRight, Bell, CalendarDays, Check, ChevronDown, ChevronRight,
   CircleHelp, Clock3, CreditCard, Download, FileText, Printer, LayoutDashboard, LifeBuoy, Monitor, MoreHorizontal,
@@ -192,9 +193,107 @@ function App() {
       {modal==='settings'&&<><label className="field-label">Nom du cybercafé<input autoFocus value={formCafe} onChange={e=>setFormCafe(e.target.value)} /></label><label className="field-label">Tarif horaire ({store.settings.currency})<input type="number" min="1" value={formRate} onChange={e=>setFormRate(e.target.value)}/></label></>}
       <div className="modal-actions"><button className="secondary-button" onClick={()=>setModal(null)}>Annuler</button><button className="primary-button" onClick={()=>modal==='computer'?addComputer():modal==='client'?saveClient():modal==='session'?startSession():saveSettings()}>{modal==='session'?<Play size={16}/>:<Check size={16}/>} {modal==='session'?'Démarrer la session':'Enregistrer'}</button></div>
     </section></div>}
-    {selectedInvoice&&<div className="modal-backdrop invoice-backdrop" onClick={()=>setSelectedInvoice(null)}><section className="invoice-paper" role="dialog" aria-modal="true" aria-labelledby="invoice-title" onClick={e=>e.stopPropagation()}><div className="invoice-actions no-print"><button className="secondary-button" onClick={()=>setSelectedInvoice(null)}><X size={15}/> Fermer</button><button className="primary-button" onClick={()=>window.print()}><Printer size={16}/> Imprimer / PDF</button></div><header className="invoice-heading"><div><div className="invoice-brand-mark">LN</div><h2 id="invoice-title">{store.settings.cafeName}</h2><p>Facture de prestation informatique</p></div><div className="invoice-number"><span>FACTURE</span><strong>FAC-{selectedInvoice.id}</strong><span>{dateTime(selectedInvoice.paidAt)}</span></div></header><div className="invoice-rule"/><div className="invoice-parties"><div><span>FACTURÉ À</span><strong>{getClient(selectedInvoice.clientId)?.name??'Client supprimé'}</strong><small>Référence client : {selectedInvoice.clientId}</small>{getClient(selectedInvoice.clientId)?.phone&&<small>{getClient(selectedInvoice.clientId)?.phone}</small>}{getClient(selectedInvoice.clientId)?.email&&<small>{getClient(selectedInvoice.clientId)?.email}</small>}</div><div><span>RÉFÉRENCE DE SESSION</span><strong>{selectedInvoice.sessionId}</strong><small>Paiement : {selectedInvoice.id}</small><small>Mode : {selectedInvoice.method}</small></div></div><table className="invoice-lines"><thead><tr><th>DESCRIPTION</th><th>QTÉ</th><th>MONTANT</th></tr></thead><tbody><tr><td>Prestation de cybercafé — session {selectedInvoice.sessionId}</td><td>1</td><td>{money(selectedInvoice.amount)}</td></tr></tbody></table><div className="invoice-total"><span>Total {selectedInvoice.status==='Payé'?'réglé':'à régler'}</span><strong>{money(selectedInvoice.amount)}</strong></div><div className="invoice-status"><span className={`status-pill ${selectedInvoice.status==='Payé'?'status-available':'status-maintenance'}`}><i/>{selectedInvoice.status}</span><p>{selectedInvoice.status==='Payé'?'Merci pour votre confiance !':'Cette facture est en attente de règlement.'}</p></div><footer className="invoice-footer">Document généré par LasyNet · Conservez cette facture pour vos archives.</footer></section></div>}
+    {selectedInvoice&&<div className="modal-backdrop invoice-backdrop" onClick={()=>setSelectedInvoice(null)}><section className="invoice-paper" role="dialog" aria-modal="true" aria-labelledby="invoice-title" onClick={e=>e.stopPropagation()}><div className="invoice-actions no-print"><button className="secondary-button" onClick={()=>setSelectedInvoice(null)}><X size={15}/> Fermer</button><button className="secondary-button" onClick={()=>window.print()}><Printer size={16}/> Imprimer</button><button className="primary-button" onClick={()=>downloadInvoicePdf(selectedInvoice,store.settings.cafeName,getClient(selectedInvoice.clientId))}><Download size={16}/> Télécharger PDF</button></div><header className="invoice-heading"><div><div className="invoice-brand-mark">LN</div><h2 id="invoice-title">{store.settings.cafeName}</h2><p>Facture de prestation informatique</p></div><div className="invoice-number"><span>FACTURE</span><strong>FAC-{selectedInvoice.id}</strong><span>{dateTime(selectedInvoice.paidAt)}</span></div></header><div className="invoice-rule"/><div className="invoice-parties"><div><span>FACTURÉ À</span><strong>{getClient(selectedInvoice.clientId)?.name??'Client supprimé'}</strong><small>Référence client : {selectedInvoice.clientId}</small>{getClient(selectedInvoice.clientId)?.phone&&<small>{getClient(selectedInvoice.clientId)?.phone}</small>}{getClient(selectedInvoice.clientId)?.email&&<small>{getClient(selectedInvoice.clientId)?.email}</small>}</div><div><span>RÉFÉRENCE DE SESSION</span><strong>{selectedInvoice.sessionId}</strong><small>Paiement : {selectedInvoice.id}</small><small>Mode : {selectedInvoice.method}</small></div></div><table className="invoice-lines"><thead><tr><th>DESCRIPTION</th><th>QTÉ</th><th>MONTANT</th></tr></thead><tbody><tr><td>Prestation de cybercafé — session {selectedInvoice.sessionId}</td><td>1</td><td>{money(selectedInvoice.amount)}</td></tr></tbody></table><div className="invoice-total"><span>Total {selectedInvoice.status==='Payé'?'réglé':'à régler'}</span><strong>{money(selectedInvoice.amount)}</strong></div><div className="invoice-status"><span className={`status-pill ${selectedInvoice.status==='Payé'?'status-available':'status-maintenance'}`}><i/>{selectedInvoice.status}</span><p>{selectedInvoice.status==='Payé'?'Merci pour votre confiance !':'Cette facture est en attente de règlement.'}</p></div><footer className="invoice-footer">Document généré par LasyNet · Conservez cette facture pour vos archives.</footer></section></div>}
     {toast&&<div className="toast"><Check size={17}/>{toast}<button aria-label="Fermer le message" onClick={()=>setToast('')}><X size={15}/></button></div>}
   </div>;
+}
+
+
+type InvoiceClient = { id: string; name: string; phone?: string; email?: string } | undefined;
+function downloadInvoicePdf(payment: Payment, cafeName: string, client: InvoiceClient) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 18;
+  const right = pageWidth - margin;
+  const invoiceRef = `FAC-${payment.id}`;
+  const date = new Date(payment.paidAt);
+  const formattedDate = Number.isNaN(date.getTime()) ? String(payment.paidAt) : date.toLocaleString('fr-FR');
+  const amount = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(payment.amount) + ' Ar';
+  doc.setFillColor(220, 38, 38);
+  doc.roundedRect(margin, 17, 15, 15, 2, 2, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text('LN', margin + 7.5, 26.5, { align: 'center' });
+  doc.setTextColor(17, 24, 39);
+  doc.setFontSize(19);
+  doc.text(cafeName || 'Cybercafé', margin, 43);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(100, 116, 139);
+  doc.text('FACTURE DE PRESTATION INFORMATIQUE', margin, 50);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(220, 38, 38);
+  doc.setFontSize(12);
+  doc.text(invoiceRef, right, 25, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Date : ${formattedDate}`, right, 32, { align: 'right' });
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin, 58, right, 58);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text('FACTURÉ À', margin, 70);
+  doc.text('RÉFÉRENCE DE SESSION', 112, 70);
+  doc.setFontSize(11);
+  doc.setTextColor(17, 24, 39);
+  doc.text(doc.splitTextToSize(client?.name || 'Client supprimé', 75), margin, 78);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  let clientY = 85;
+  if (client?.id) { doc.text(`Référence client : ${client.id}`, margin, clientY); clientY += 5; }
+  if (client?.phone) { doc.text(`Téléphone : ${client.phone}`, margin, clientY); clientY += 5; }
+  if (client?.email) doc.text(`E-mail : ${client.email}`, margin, clientY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(17, 24, 39);
+  doc.text(String(payment.sessionId), 112, 78);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Paiement : ${payment.id}`, 112, 85);
+  doc.text(`Mode de paiement : ${payment.method}`, 112, 90);
+  const tableY = 111;
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(margin, tableY, pageWidth - margin * 2, 12, 1.5, 1.5, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text('DESCRIPTION', margin + 4, tableY + 7.5);
+  doc.text('QTÉ', right - 38, tableY + 7.5, { align: 'center' });
+  doc.text('MONTANT', right - 4, tableY + 7.5, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(51, 65, 85);
+  doc.text(doc.splitTextToSize(`Prestation de cybercafé — session ${payment.sessionId}`, 105), margin + 4, tableY + 23);
+  doc.text('1', right - 38, tableY + 23, { align: 'center' });
+  doc.text(amount, right - 4, tableY + 23, { align: 'right' });
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin, tableY + 33, right, tableY + 33);
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(margin, tableY + 42, pageWidth - margin * 2, 20, 2, 2, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(71, 85, 105);
+  doc.text(payment.status === 'Payé' ? 'TOTAL RÉGLÉ' : 'TOTAL À RÉGLER', margin + 5, tableY + 54);
+  doc.setFontSize(16);
+  doc.setTextColor(17, 24, 39);
+  doc.text(amount, right - 5, tableY + 55, { align: 'right' });
+  doc.setFontSize(9);
+  doc.setTextColor(payment.status === 'Payé' ? 22 : 180, payment.status === 'Payé' ? 163 : 83, payment.status === 'Payé' ? 74 : 9);
+  doc.text(`Statut : ${payment.status}`, margin, tableY + 76);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(payment.status === 'Payé' ? 'Merci pour votre confiance !' : 'Cette facture est en attente de règlement.', margin, tableY + 83);
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin, 270, right, 270);
+  doc.setFontSize(8);
+  doc.text('Document généré par LasyNet · Conservez cette facture pour vos archives.', margin, 277);
+  doc.save(`${invoiceRef}.pdf`);
 }
 
 function ModuleHeader({ title, subtitle, action, onAction, children }: { title: string; subtitle: string; action: string; onAction: () => void; children: React.ReactNode }) {
