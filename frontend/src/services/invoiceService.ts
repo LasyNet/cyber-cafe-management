@@ -99,11 +99,11 @@ function buildInvoicePdf(payment: Payment, cafeName: string, client: InvoiceClie
   return doc;
 }
 
-function downloadInvoicePdf(payment: Payment, cafeName: string, client: InvoiceClient) {
+export function downloadInvoicePdf(payment: Payment, cafeName: string, client: InvoiceClient) {
   buildInvoicePdf(payment, cafeName, client).save(`FAC-${payment.id}.pdf`);
 }
 
-function printInvoicePdf(payment: Payment, cafeName: string, client: InvoiceClient) {
+export function printInvoicePdf(payment: Payment, cafeName: string, client: InvoiceClient) {
   const doc = buildInvoicePdf(payment, cafeName, client);
   doc.autoPrint();
   window.open(doc.output('bloburl'), '_blank', 'noopener,noreferrer');
