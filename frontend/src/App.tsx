@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Activity, ArrowDownRight, ArrowUpRight, Bell, CalendarDays, Check, ChevronDown,
-  ChevronLeft, ChevronRight, CircleHelp, Clock3, Command, CreditCard, Download,
+  ChevronLeft, ChevronRight, CircleHelp, Clock3, CreditCard, Download,
   LayoutDashboard, LifeBuoy, LogOut, Monitor, MoreHorizontal, Plus, Search,
   Settings2, ShieldCheck, Sparkles, Users, Wifi, X, Zap,
 } from 'lucide-react';
@@ -86,8 +86,8 @@ function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark"><Command size={22} strokeWidth={2.6} /></div>
-          <div><span className="brand-name">CyberDesk</span><span className="brand-caption">ESPACE DE GESTION</span></div>
+          <div className="brand-mark" aria-label="Logo LasyNet"><span>LN</span></div>
+          <div><span className="brand-name">LasyNet</span><span className="brand-caption">GESTION CYBERCAFÉ</span></div>
         </div>
         <div className="workspace"><div className="workspace-icon"><Wifi size={17} /></div><div className="workspace-copy"><strong>Cyber Café Central</strong><span>Antananarivo, MG</span></div><ChevronDown size={15} className="muted-icon" /></div>
         <div className="nav-label">MENU PRINCIPAL</div>
@@ -146,7 +146,7 @@ function App() {
               </article>
               <article className="panel occupancy-panel">
                 <div className="panel-header"><div><h2>Occupation du parc</h2><p>État des postes en temps réel</p></div><button className="icon-button subtle" aria-label="Plus d’options" onClick={() => notify('Options du parc')}><MoreHorizontal size={20} /></button></div>
-                <div className="occupancy-main"><div className="donut" style={{ background: `conic-gradient(#5268e8 0 ${(activeCount / computers.length) * 100}%, #e6ebf3 ${(activeCount / computers.length) * 100}% 100%)` }}><div><strong>{Math.round((activeCount / computers.length) * 100)}<small>%</small></strong><span>occupés</span></div></div><div className="occupancy-legend"><div><span className="legend-square purple" /><span>En cours</span><strong>{activeCount}</strong></div><div><span className="legend-square pale" /><span>Disponibles</span><strong>{availableCount}</strong></div><div><span className="legend-square amber" /><span>Maintenance</span><strong>{computers.filter((pc) => pc.status === 'Maintenance').length}</strong></div></div></div>
+                <div className="occupancy-main"><div className="donut" style={{ background: `conic-gradient(#dc2626 0 ${(activeCount / computers.length) * 100}%, #334155 ${(activeCount / computers.length) * 100}% 100%)` }}><div><strong>{Math.round((activeCount / computers.length) * 100)}<small>%</small></strong><span>occupés</span></div></div><div className="occupancy-legend"><div><span className="legend-square purple" /><span>En cours</span><strong>{activeCount}</strong></div><div><span className="legend-square pale" /><span>Disponibles</span><strong>{availableCount}</strong></div><div><span className="legend-square amber" /><span>Maintenance</span><strong>{computers.filter((pc) => pc.status === 'Maintenance').length}</strong></div></div></div>
                 <div className="occupancy-note"><Sparkles size={16} /><span><strong>Tout est sous contrôle.</strong> Votre parc est opérationnel.</span></div>
               </article>
             </section>

@@ -7,3 +7,103 @@
 @media(max-width:900px){.sidebar{width:72px;padding:20px 10px 12px;align-items:center}.brand{padding:0 0 26px}.brand-mark{flex-shrink:0}.brand>div:nth-child(2),.workspace-copy,.workspace>.muted-icon,.nav-label,.nav-item span,.help-card,.profile-info,.profile-menu{display:none}.workspace{padding:8px;margin:0 0 24px}.nav-item{justify-content:center;padding:12px 0}.nav-item.active:before{left:0}.navigation{width:100%}.management-label{display:none}.sidebar-bottom{width:100%}.profile{justify-content:center;padding:14px 0 0}.main-content{margin-left:72px}.content-grid{grid-template-columns:1fr}.topbar{padding:0 20px}.page-content{padding:24px 20px}.search-box{width:180px}}
 @media(max-width:620px){.topbar{height:62px;padding:0 14px}.breadcrumb{gap:5px;font-size:10px}.topbar-actions{gap:7px}.search-box{width:36px;height:35px;padding:0;justify-content:center;border:0;background:transparent}.search-box input,.search-box kbd{display:none}.notification-button{border:0}.topbar-divider,.date-chip{display:none}.page-content{padding:22px 13px}.welcome-row{align-items:flex-start;flex-direction:column;gap:15px;margin-bottom:20px}.welcome-row h1{font-size:24px}.welcome-row>.primary-button{width:100%}.stats-grid{gap:10px}.stat-card{padding:13px}.stat-label{font-size:10px}.stat-icon{width:30px;height:30px}.stat-value{font-size:21px;margin-top:12px}.stat-value small{font-size:10px}.stat-footer{font-size:8px;gap:4px}.stat-spark{display:none}.revenue-panel,.occupancy-panel{padding:15px}.panel-header h2{font-size:13px}.revenue-summary>strong{font-size:21px}.chart{height:150px}.occupancy-main{gap:17px}.donut{width:120px;height:120px}.donut:before{inset:10px}.occupancy-legend{min-width:110px;gap:13px}.computers-header{padding:0 14px 14px}.table-actions{align-items:flex-start;flex-direction:column;gap:10px}.filter-tabs{width:100%;overflow-x:auto}.filter-tabs button{padding:7px 8px}.text-button{align-self:flex-end}.table-footer{padding:12px 14px}.page-footer{gap:8px;flex-wrap:wrap}.page-footer span:last-child{display:none}.session-modal{padding:20px}.modal-header h2{font-size:18px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+
+/* LasyNet brand theme: dark slate surfaces, red actions, emerald success states. */
+:root{color-scheme:dark;--ink:#f1f5f9;--muted:#94a3b8;--line:#334155;--purple:#dc2626;--purple-dark:#b91c1c;--sidebar:#0f172a}
+body{background:#0b1120;color:#e2e8f0}
+.sidebar{background:#0f172a;border-color:#263449}
+.brand-mark{background:linear-gradient(145deg,#ef4444,#b91c1c);box-shadow:0 6px 16px #dc262633}
+.brand-mark span{font:800 15px 'Manrope',sans-serif;letter-spacing:-.5px;color:#fff}
+.brand-name{color:#f8fafc}
+.brand-caption,.nav-label{color:#94a3b8}
+.workspace{background:#111c2e;border-color:#334155}
+.workspace-icon{background:#3f1720;color:#f87171}
+.workspace-copy strong{color:#f1f5f9}
+.workspace-copy span,.muted-icon{color:#94a3b8}
+.nav-item{color:#cbd5e1}
+.nav-item:hover{background:#1e293b;color:#fca5a5}
+.nav-item.active{background:#3b1820;color:#fca5a5}
+.nav-item.active:before{background:#dc2626}
+.nav-count{background:#263449;color:#cbd5e1}
+.help-card{background:linear-gradient(145deg,#111c2e,#0f172a);border-color:#334155}
+.help-icon{background:#3b1820;color:#f87171}
+.help-card>strong,.profile-info strong{color:#f1f5f9}
+.help-card p,.profile-info span{color:#94a3b8}
+.help-card button{color:#f87171}
+.profile{border-color:#334155}
+.avatar{background:#3b1820;color:#fecaca}
+.icon-button{color:#94a3b8}
+.icon-button:hover{background:#263449;color:#fca5a5}
+.topbar{background:#0f172a;border-color:#263449}
+.breadcrumb{color:#94a3b8}
+.breadcrumb strong{color:#f1f5f9}
+.search-box,.date-chip,.select-chip{background:#111c2e;border-color:#334155;color:#cbd5e1}
+.search-box input{color:#f1f5f9}
+.search-box kbd{border-color:#475569;color:#94a3b8}
+.notification-button,.subtle{border-color:#334155}
+.topbar-divider{background:#334155}
+.page-content{color:#e2e8f0}
+.eyebrow{color:#94a3b8}
+.welcome-row h1{color:#f8fafc}
+.page-subtitle{color:#94a3b8}
+.primary-button{background:#dc2626;box-shadow:0 5px 12px #dc262633;color:#fff}
+.primary-button:hover{background:#b91c1c}
+.stat-card,.panel{background:#111c2e;border-color:#29374b;box-shadow:0 3px 12px #02061730}
+.stat-label{color:#cbd5e1}
+.stat-value{color:#f8fafc}
+.stat-value small,.stat-footer,.stat-neutral{color:#94a3b8}
+.stat-icon.revenue{background:#12382f;color:#34d399}
+.stat-icon.sessions{background:#3b1820;color:#f87171}
+.stat-icon.computers{background:#1e293b;color:#fca5a5}
+.stat-icon.customers{background:#3b2a18;color:#fbbf24}
+.trend.positive{color:#34d399}
+.tiny-dot.green{background:#34d399}
+.stat-spark i{background:#34d399}
+.spark-four i{background:#fbbf24}
+.mini-progress,.mini-progress.blue{background:#263449}
+.mini-progress span,.mini-progress.blue span{background:#dc2626}
+.panel-header h2{color:#f1f5f9}
+.panel-header p{color:#94a3b8}
+.revenue-summary>strong{color:#f8fafc}
+.revenue-summary>strong span,.revenue-change small{color:#94a3b8}
+.chart-grid span,.bar-label,.chart-foot{color:#94a3b8}
+.chart-grid span:after{border-color:#334155}
+.bar-track{background:#1e293b}
+.bar-track span,.bar-track.highlight span{background:linear-gradient(180deg,#f87171,#dc2626);box-shadow:none}
+.chart-foot{border-color:#334155}
+.chart-foot>span:first-child{color:#cbd5e1}
+.legend-dot{background:#dc2626}
+.donut:before{background:#111c2e}
+.donut strong{color:#f8fafc}
+.donut span{color:#94a3b8}
+.occupancy-legend>div{color:#cbd5e1}
+.occupancy-legend strong{color:#f8fafc}
+.legend-square.purple{background:#dc2626}
+.legend-square.pale{background:#64748b}
+.legend-square.amber{background:#fbbf24}
+.occupancy-note{background:#1e293b;color:#cbd5e1}
+.occupancy-note svg,.occupancy-note strong{color:#fca5a5}
+.computers-panel{background:#111c2e}
+.filter-tabs{background:#0b1120}
+.filter-tabs button{color:#94a3b8}
+.filter-tabs button.selected{background:#dc2626;color:#fff}
+table{color:#e2e8f0}
+th{color:#94a3b8!important}
+td{border-color:#263449!important}
+tr:hover td{background:#172338}
+.status-running{background:#3b1820!important;color:#fca5a5!important}
+.status-available{background:#12382f!important;color:#6ee7b7!important}
+.status-maintenance{background:#3b2a18!important;color:#fcd34d!important}
+.table-footer,.page-footer{border-color:#334155;color:#94a3b8}
+.secondary-button{background:#263449;border-color:#475569;color:#e2e8f0}
+.secondary-button:hover{background:#334155}
+.modal-backdrop{background:#020617b8}
+.session-modal{background:#0f172a;border-color:#334155;color:#f1f5f9;box-shadow:0 24px 80px #0008}
+.modal-header h2{color:#f8fafc}
+.modal-kicker,.modal-hint{color:#94a3b8}
+.session-modal label{color:#cbd5e1}
+.session-modal input,.session-modal select{background:#111c2e!important;border-color:#475569!important;color:#f8fafc!important}
+.toast{background:#0f172a;border:1px solid #334155;color:#f1f5f9;box-shadow:0 12px 35px #0006}
+.empty-state{color:#94a3b8}
+@media(max-width:800px){.sidebar{background:#0f172a}.topbar{background:#0f172a}}
