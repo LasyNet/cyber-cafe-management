@@ -1,39 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import {
-  Activity, ArrowUpRight, ArrowRight, Bell, Check, CheckCircle2, ChevronDown, ChevronRight,
-  CircleHelp, Clock3, CreditCard, Download, FileText, Printer, LayoutDashboard, LifeBuoy, Monitor, MoreHorizontal,
-  Plus, Search, Settings2, ShieldCheck, Trash2, Users, Wifi, X, RotateCcw, Pencil, Play, Gauge,
+  ArrowUpRight, ArrowRight, Bell, Check, CheckCircle2, ChevronDown, ChevronRight,
+  CircleHelp, Clock3, CreditCard, Download, FileText, Printer, LifeBuoy, Monitor, MoreHorizontal,
+  Plus, Search, ShieldCheck, Trash2, Users, Wifi, X, RotateCcw, Pencil, Play, Gauge,
 } from 'lucide-react';
 import { newId, readStore, resetStore, writeStore, type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './data/mockStore';
 
-type Page = 'Vue d’ensemble' | 'Ordinateurs' | 'Sessions' | 'Clients' | 'Paiements' | 'Facturation' | 'Rapports' | 'Paramètres';
-const nav = [
-  { label: 'Vue d’ensemble' as Page, icon: LayoutDashboard }, { label: 'Ordinateurs' as Page, icon: Monitor },
-  { label: 'Sessions' as Page, icon: Clock3 }, { label: 'Clients' as Page, icon: Users },
-  { label: 'Paiements' as Page, icon: CreditCard }, { label: 'Facturation' as Page, icon: FileText }, { label: 'Rapports' as Page, icon: Activity },
-  { label: 'Paramètres' as Page, icon: Settings2 },
-];
-const pageSlugs: Record<Page, string> = {
-  'Vue d’ensemble': 'dashboard',
-  Ordinateurs: 'ordinateurs',
-  Sessions: 'sessions',
-  Clients: 'clients',
-  Paiements: 'paiements',
-  Facturation: 'facturation',
-  Rapports: 'rapports',
-  Paramètres: 'parametres',
-};
-const pageFromHash = (): Page => {
-  const slug = window.location.hash.slice(1);
-  return (Object.entries(pageSlugs).find(([, value]) => value === slug)?.[0] as Page | undefined) ?? 'Vue d’ensemble';
-};
-const money = (n: number, currency = 'Ar') => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(n) + ' ' + currency;
-const dateTime = (value: string) => new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
-const elapsed = (startedAt: string) => {
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 60000));
-  return `${String(Math.floor(minutes / 60)).padStart(2, '0')} h ${String(minutes % 60).padStart(2, '0')}`;
-};
+import { pageFromHash, pageSlugs, nav, type Page } from './navigation';
+import { dateTime, elapsed, money } from './lib/formatters';
 
 function App() {
   const [store, setStore] = useState<Store>(() => readStore());
