@@ -66,9 +66,10 @@ function App() {
 
   useEffect(() => { if (!writeStore(store)) setToast('Stockage local indisponible : vérifie les paramètres du navigateur.'); }, [store]);
   useEffect(() => {
+    if (screen !== 'app') return;
     const slug = pageSlugs[activePage];
     if (window.location.hash.slice(1) !== slug) window.history.pushState(null, '', `#${slug}`);
-  }, [activePage]);
+  }, [activePage, screen]);
   useEffect(() => {
     const syncPageWithHistory = () => setActivePage(pageFromHash());
     window.addEventListener('popstate', syncPageWithHistory);
@@ -188,6 +189,12 @@ function App() {
     setAuthNotice('');
     setActivePage('Vue d’ensemble');
   };
+  const returnToLanding = () => {
+    sessionStorage.removeItem('lasynet-demo-auth');
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    setScreen('landing');
+    setAuthNotice('');
+  };
   const submitDemoAuth = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!authEmail.trim() || !authPassword.trim() || (screen === 'signup' && !authName.trim())) {
@@ -210,7 +217,7 @@ function App() {
       <div className="sidebar-bottom"><div className="help-card"><div className="help-icon"><LifeBuoy size={18} /></div><strong>Mode hors ligne</strong><p>Les données sont enregistrées sur ce navigateur.</p><button onClick={() => notify('Les données locales restent sur cet appareil.')}>À propos <ChevronRight size={14} /></button></div><div className="profile"><div className="avatar">AD</div><div className="profile-info"><strong>Administrateur</strong><span>Mode démonstration</span></div><button className="icon-button profile-menu" aria-label="Aide" onClick={() => notify('Application frontend autonome.')}><CircleHelp size={19} /></button></div></div>
     </aside>
     <main className="main-content">
-      <header className="topbar"><div className="breadcrumb"><span>LasyNet</span><ChevronRight size={15} /><strong>{activePage}</strong></div><div className="topbar-actions"><label className="search-box"><Search size={17} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rechercher dans le module..." /><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label="État du stockage" onClick={() => notify('Stockage local actif sur ce navigateur.')}><Bell size={19} /><span className="notification-dot" /></button><div className="topbar-divider" /><button className="date-chip" onClick={exportData}><Download size={16} /> Exporter <ChevronDown size={14} /></button></div></header>
+      <header className="topbar"><div className="topbar-leading"><button className="landing-return-button" onClick={returnToLanding} title="Retour à la page d’accueil"><ArrowRight size={15} /> Accueil</button><div className="breadcrumb"><span>LasyNet</span><ChevronRight size={15} /><strong>{activePage}</strong></div></div><div className="topbar-actions"><label className="search-box"><Search size={17} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rechercher dans le module..." /><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label="État du stockage" onClick={() => notify('Stockage local actif sur ce navigateur.')}><Bell size={19} /><span className="notification-dot" /></button><div className="topbar-divider" /><button className="date-chip" onClick={exportData}><Download size={16} /> Exporter <ChevronDown size={14} /></button></div></header>
       <div className="page-content">
         {activePage === 'Vue d’ensemble' && <>
           <section className="welcome-row"><div><div className="eyebrow"><span className="live-dot" /> MODE DÉMONSTRATION · DONNÉES LOCALES</div><h1>Bonjour, Administrateur <span className="wave">✦</span></h1><p className="page-subtitle">Pilotez votre cybercafé depuis un tableau de bord interactif.</p></div><button className="primary-button" onClick={() => openModal('session')}><Plus size={18} /> Nouvelle session</button></section>
