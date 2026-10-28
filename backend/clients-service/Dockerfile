@@ -1,22 +1,13 @@
 FROM node:20-alpine
 
-# Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers de dépendances
+# Les dépendances de développement (dont Nest CLI) sont nécessaires au build.
 COPY package*.json ./
+RUN npm ci
 
-# Installer les dépendances
-RUN npm ci --only=production
-
-# Copier le code source
 COPY . .
+RUN npm run build && npm prune --omit=dev
 
-# Construire l'application
-RUN npm run build
-
-# Exposer le port
 EXPOSE 8002
-
-# Commande de démarrage
-CMD ["npm", "run", "start:prod"] 
+CMD ["npm", "run", "start:prod"]
