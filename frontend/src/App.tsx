@@ -39,6 +39,7 @@ function App() {
   const [formRate, setFormRate] = useState('1200');
   const [formCafe, setFormCafe] = useState('Cyber Café Central');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showInlineClientRegistration, setShowInlineClientRegistration] = useState(false);
 
   useEffect(() => { if (!writeStore(store)) setToast('Stockage local indisponible : vérifie les paramètres du navigateur.'); }, [store]);
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(''), 3200); return () => window.clearTimeout(timer); }, [toast]);
@@ -54,7 +55,7 @@ function App() {
   const getComputer = (id: string) => store.computers.find(c => c.id === id);
   const notify = (message: string) => setToast(message);
   const openModal = (kind: typeof modal) => {
-    setEditingId(null); setFormName(''); setFormPhone(''); setFormEmail(''); setFormMacAddress(''); setFormComputerType('Interne'); setFormStatus('Disponible');
+    setEditingId(null); setFormName(''); setFormPhone(''); setFormEmail(''); setFormMacAddress(''); setFormComputerType('Interne'); setFormStatus('Disponible'); setShowInlineClientRegistration(false);
     setFormCafe(store.settings.cafeName); setFormRate(String(store.settings.hourlyRate));
     setFormComputer(store.computers.find(c => c.status === 'Disponible')?.id ?? '');
     setFormClient(store.clients[0]?.id ?? ''); setFormHours('1'); setModal(kind);
@@ -84,6 +85,13 @@ function App() {
   };
   const saveClient = () => {
     if (!formName.trim()) return notify('Le nom du client est obligatoire.');
+    if (modal === 'session' && showInlineClientRegistration) {
+      const client: Client = { id: newId('CL'), name: formName.trim(), phone: formPhone.trim(), email: formEmail.trim(), createdAt: new Date().toISOString() };
+      setStore(s => ({ ...s, clients: [client, ...s.clients] }));
+      setFormClient(client.id); setFormName(''); setFormPhone(''); setFormEmail(''); setShowInlineClientRegistration(false);
+      notify(client.name + ' ajouté et sélectionné pour cette session.');
+      return;
+    }
     if (editingId) {
       setStore(s => ({ ...s, clients: s.clients.map(c => c.id === editingId ? { ...c, name: formName.trim(), phone: formPhone.trim(), email: formEmail.trim() } : c) }));
       notify('Fiche client mise à jour.');
