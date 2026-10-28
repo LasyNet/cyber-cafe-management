@@ -1,5 +1,3 @@
-import { useEffect, useMemo, useState } from 'react';
-
 export type ComputerStatus = 'Disponible' | 'En cours' | 'Maintenance';
 export type ComputerType = 'Interne' | 'Externe';
 export type Computer = { id: string; name: string; type: ComputerType; macAddress: string; status: ComputerStatus };
@@ -13,7 +11,7 @@ export type Store = { computers: Computer[]; clients: Client[]; sessions: Sessio
 const KEY = 'lasynet-cybercafe-store-v1';
 const now = new Date();
 const ago = (hours: number) => new Date(now.getTime() - hours * 3600000).toISOString();
-const seed: Store = {
+export const initialStore: Store = {
   computers: [
     { id: 'PC-01', name: 'Station 01', type: 'Interne', macAddress: '02:4C:4E:00:00:01', status: 'En cours' }, { id: 'PC-02', name: 'Station 02', type: 'Interne', macAddress: '02:4C:4E:00:00:02', status: 'Disponible' },
     { id: 'PC-03', name: 'Station 03', type: 'Interne', macAddress: '02:4C:4E:00:00:03', status: 'En cours' }, { id: 'PC-04', name: 'Station 04', type: 'Interne', macAddress: '02:4C:4E:00:00:04', status: 'En cours' },
@@ -43,34 +41,3 @@ const seed: Store = {
   settings: { cafeName: 'Cyber Café Central', hourlyRate: 1200, currency: 'Ar' },
 };
 
-export function readStore(): Store {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<Store>;
-      return { ...seed, ...parsed, computers: (parsed.computers ?? seed.computers).map(c => ({ ...c, type: c.type ?? 'Interne', macAddress: c.macAddress ?? '' })), settings: { ...seed.settings, ...parsed.settings } };
-    }
-  } catch (error) {
-    console.warn('Impossible de lire les données locales LasyNet.', error);
-  }
-  return seed;
-}
-
-export function writeStore(store: Store) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(store));
-    return true;
-  } catch (error) {
-    console.error('Impossible d’enregistrer les données locales LasyNet.', error);
-    return false;
-  }
-}
-
-export function resetStore() {
-  localStorage.removeItem(KEY);
-  return seed;
-}
-
-export function newId(prefix: string) {
-  return `${prefix}-${Date.now().toString(36).toUpperCase()}`;
-}
