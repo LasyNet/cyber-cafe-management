@@ -61,6 +61,9 @@ def test_login_sets_httponly_cookie_without_exposing_token(client: TestClient) -
 
     assert response.status_code == 200
     assert "access_token" not in response.json()
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
     cookie = response.headers["set-cookie"].lower()
     assert "lasynet_session=" in cookie
     assert "httponly" in cookie
