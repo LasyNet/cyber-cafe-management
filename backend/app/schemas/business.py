@@ -126,9 +126,10 @@ class PaymentRead(ORMModel):
 class SettingsUpdate(BaseModel):
     cafe_name: NonEmpty | None = None
     hourly_rate: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
-    currency: Annotated[
-        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=8)
-    ] | None = None
+    currency: (
+        Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=8)]
+        | None
+    ) = None
 
 
 class SettingsRead(ORMModel):
