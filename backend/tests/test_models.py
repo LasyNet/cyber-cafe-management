@@ -28,6 +28,5 @@ def test_sessions_and_payments_have_required_foreign_keys() -> None:
 def test_settings_are_a_singleton_record() -> None:
     settings = Base.metadata.tables["app_settings"]
     assert any(
-        constraint.name == "ck_app_settings_singleton"
-        for constraint in settings.constraints
+        constraint.name == "ck_app_settings_singleton" for constraint in settings.constraints
     )
