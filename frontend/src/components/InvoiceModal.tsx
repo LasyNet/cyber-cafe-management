@@ -1,5 +1,5 @@
 import { Download, Printer, X } from 'lucide-react';
-import type { Client, Payment, Store } from '../data/mockStore';
+import type { Client, Payment, Store } from '../types/domain';
 import { dateTime, money } from '../utils/formatters';
 import { downloadInvoicePdf, printInvoicePdf } from '../services/invoiceService';
 
