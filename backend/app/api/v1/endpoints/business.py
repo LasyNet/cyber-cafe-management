@@ -189,7 +189,10 @@ def update_session(session_id: str, payload: SessionUpdate, db: Session = Depend
     if data.get("status") == "Terminée" and not data.get("ended_at"):
         data["ended_at"] = datetime.now(UTC)
     if data.get("status") == "En cours":
-        raise HTTPException(status_code=422, detail="Une session terminée ne peut pas être réactivée.")
+        raise HTTPException(
+            status_code=422,
+            detail="Une session terminée ne peut pas être réactivée.",
+        )
     for key, value in data.items():
         setattr(session, key, value)
     if session.status == "Terminée":
