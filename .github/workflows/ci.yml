@@ -32,20 +32,37 @@ jobs:
       - name: Set up Python for backend
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
 
-      - name: Install Python backend dependencies
-        run: python -m pip install --disable-pip-version-check -r backend/auth-service/requirements.txt
+      - name: Install clean Python backend
+        working-directory: backend
+        run: python -m pip install --disable-pip-version-check -e ".[dev]"
 
-      - name: Check Python backend syntax
-        run: python -m compileall -q backend/auth-service/app
+      - name: Test clean Python backend
+        working-directory: backend
+        run: pytest
+
+      - name: Lint clean Python backend
+        working-directory: backend
+        run: ruff check app tests
+
+      - name: Check Python formatting
+        working-directory: backend
+        run: ruff format --check app tests
+
+      - name: Validate legacy auth service syntax during migration
+        run: |
+          python -m pip install --disable-pip-version-check -r backend/auth-service/requirements.txt
+          python -m compileall -q backend/auth-service/app
 
       - name: Validate Docker Compose configuration
         run: |
           cp infrastructure/env.example infrastructure/.env
           docker compose --env-file infrastructure/.env -f infrastructure/docker-compose.yml config --quiet
 
-      - name: Build Python auth service image
+      - name: Build legacy auth service image during migration
         run: |
           cp infrastructure/env.example infrastructure/.env
           docker compose --env-file infrastructure/.env -f infrastructure/docker-compose.yml build auth-service
