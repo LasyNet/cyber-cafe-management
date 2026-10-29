@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js for frontend
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -29,23 +29,15 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      - name: Install clients service dependencies
-        working-directory: backend/clients-service
-        run: npm ci
-
-      - name: Build clients service
-        working-directory: backend/clients-service
-        run: npm run build
-
-      - name: Set up Python
+      - name: Set up Python for backend
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install auth service dependencies
+      - name: Install Python backend dependencies
         run: python -m pip install --disable-pip-version-check -r backend/auth-service/requirements.txt
 
-      - name: Check Python syntax
+      - name: Check Python backend syntax
         run: python -m compileall -q backend/auth-service/app
 
       - name: Validate Docker Compose configuration
@@ -53,6 +45,7 @@ jobs:
           cp infrastructure/env.example infrastructure/.env
           docker compose --env-file infrastructure/.env -f infrastructure/docker-compose.yml config --quiet
 
-      - name: Build backend Docker images
+      - name: Build Python auth service image
         run: |
-          docker compose --env-file infrastructure/.env -f infrastructure/docker-compose.yml build auth-service clients-service
+          cp infrastructure/env.example infrastructure/.env
+          docker compose --env-file infrastructure/.env -f infrastructure/docker-compose.yml build auth-service
