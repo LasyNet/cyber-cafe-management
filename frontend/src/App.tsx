@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { money, dateTime, elapsed } from './utils/formatters';
-import { clearToken, currentUser, getToken, loadStore, login, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings } from './api/client';
+import { clearToken, currentUser, getToken, loadStore, login, logoutSession, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings } from './api/client';
 import { pageFromHash, pageSlugs, type Page } from './navigation';
 import { ModuleHeader } from './components/ModuleHeader';
 import { LandingPage } from './components/LandingPage';
@@ -203,11 +203,17 @@ function App() {
     const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'lasynet-export.json'; link.click(); URL.revokeObjectURL(url);
     notify('Export des données du serveur préparé.');
   };
-  const logout = () => {
+  const logout = async () => {
+    let warning = '';
+    try {
+      await logoutSession();
+    } catch {
+      warning = 'La déconnexion côté serveur n’a pas pu être confirmée. Vérifie ta connexion réseau.';
+    }
     clearToken();
     window.history.replaceState(null, '', '/login');
     setAuthPassword('');
-    setAuthNotice('');
+    setAuthNotice(warning);
     setScreen('login');
   };
   const submitAuth = async (event: React.FormEvent<HTMLFormElement>) => {

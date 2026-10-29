@@ -1,6 +1,6 @@
 """FastAPI application factory and ASGI entry point."""
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.endpoints.auth import router as auth_router
@@ -31,6 +31,20 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type"],
     )
+
+    @application.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Permissions-Policy", "camera=(), microphone=(), geolocation=()"
+        )
+        if request.url.path.startswith(settings.api_v1_prefix):
+            response.headers["Cache-Control"] = "no-store"
+        return response
+
     application.include_router(health_router, prefix=settings.api_v1_prefix)
     application.include_router(auth_router, prefix=settings.api_v1_prefix)
     application.include_router(business_router, prefix=settings.api_v1_prefix)

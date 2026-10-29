@@ -16,8 +16,8 @@ class LoginRequest(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+    """Browser session response; the bearer token is only sent in an HttpOnly cookie."""
+
     expires_in: int
 
 
