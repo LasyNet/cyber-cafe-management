@@ -100,6 +100,7 @@ function App() {
       if (path === '/app') setActivePage(pageFromHash());
     };
     const syncPageWithHistory = () => setActivePage(pageFromHash());
+    syncRouteWithHistory();
     window.addEventListener('popstate', syncRouteWithHistory);
     window.addEventListener('hashchange', syncPageWithHistory);
     return () => {
