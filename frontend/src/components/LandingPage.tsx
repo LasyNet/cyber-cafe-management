@@ -22,7 +22,7 @@ export function LandingPage({ screen, onNavigate, onSubmit, name, setName, email
         {notice && <div className="auth-notice" role="alert">{notice}</div>}
         <button className="landing-primary auth-submit" type="submit">Se connecter <ArrowRight size={17}/></button>
       </form>
-      <div className="auth-demo-note"><ShieldCheck size={17}/><span>Connexion protégée par le serveur. Vos identifiants sont vérifiés par l’API.</span></div>
+      <div className="auth-security-note"><ShieldCheck size={17}/><span>Connexion protégée par le serveur. Vos identifiants sont vérifiés par l’API.</span></div>
       <div className="auth-switch">Accès réservé au personnel autorisé. La création des comptes est gérée par un administrateur.</div>
     </section>
     <div className="auth-footer">© 2026 LasyNet · Gestion de cybercafé</div>
