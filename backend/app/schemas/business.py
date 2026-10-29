@@ -2,10 +2,9 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
-from typing_extensions import Annotated
 
 NonEmpty = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 ComputerType = Literal["Interne", "Externe"]
