@@ -107,6 +107,16 @@ def upgrade() -> None:
         sa.CheckConstraint("id = 1", name="ck_app_settings_singleton"),
         sa.CheckConstraint("hourly_rate >= 0", name="ck_app_settings_hourly_rate"),
     )
+    op.bulk_insert(
+        sa.table(
+            "app_settings",
+            sa.column("id", sa.Integer),
+            sa.column("cafe_name", sa.String),
+            sa.column("hourly_rate", sa.Numeric),
+            sa.column("currency", sa.String),
+        ),
+        [{"id": 1, "cafe_name": "Cyber Café Central", "hourly_rate": 1200, "currency": "Ar"}],
+    )
 
 
 def downgrade() -> None:
