@@ -23,7 +23,9 @@ def login(payload: LoginRequest, db: Annotated[Session, Depends(get_db)]) -> Tok
     if not settings.auth_secret_key:
         raise HTTPException(status_code=503, detail="L'authentification n'est pas configurée.")
     user = db.scalar(select(User).where(func.lower(User.email) == payload.email.lower()))
-    if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
+    if user is None or not user.is_active or not verify_password(
+        payload.password, user.password_hash
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="E-mail ou mot de passe incorrect.",
