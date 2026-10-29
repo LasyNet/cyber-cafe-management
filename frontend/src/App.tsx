@@ -173,11 +173,12 @@ function App() {
     const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'lasynet-export.json'; link.click(); URL.revokeObjectURL(url);
     notify('Export des données du serveur préparé.');
   };
-  const returnToLanding = () => {
+  const logout = () => {
     clearToken();
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-    setScreen('landing');
+    setAuthPassword('');
     setAuthNotice('');
+    setScreen('login');
   };
   const submitAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -196,7 +197,7 @@ function App() {
   return <div className="app-shell">
     <Sidebar cafeName={store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} />
     <main className="main-content">
-      <header className="topbar"><div className="topbar-leading"><button className="landing-return-button" onClick={returnToLanding} title="Retour à la page d’accueil"><ArrowRight size={15} /> Accueil</button><div className="breadcrumb"><span>LasyNet</span><ChevronRight size={15} /><strong>{activePage}</strong></div></div><div className="topbar-actions"><label className="search-box"><Search size={17} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rechercher dans le module..." /><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label="État du stockage" onClick={() => notify('Données synchronisées avec le serveur.')}><Bell size={19} /><span className="notification-dot" /></button><div className="topbar-divider" /><button className="date-chip" onClick={exportData}><Download size={16} /> Exporter <ChevronDown size={14} /></button></div></header>
+      <header className="topbar"><div className="topbar-leading"><button className="landing-return-button" onClick={logout} title="Déconnexion"><ArrowRight size={15} /> Déconnexion</button><div className="breadcrumb"><span>LasyNet</span><ChevronRight size={15} /><strong>{activePage}</strong></div></div><div className="topbar-actions"><label className="search-box"><Search size={17} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rechercher dans le module..." /><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label="État du stockage" onClick={() => notify('Données synchronisées avec le serveur.')}><Bell size={19} /><span className="notification-dot" /></button><div className="topbar-divider" /><button className="date-chip" onClick={exportData}><Download size={16} /> Exporter <ChevronDown size={14} /></button></div></header>
       <div className="page-content">
         {activePage === 'Vue d’ensemble' && <>
           <section className="welcome-row"><div><div className="eyebrow"><span className="live-dot" /> API SÉCURISÉE · DONNÉES SERVEUR</div><h1>Bonjour, {authName.trim().split(/\s+/)[0] || 'Bienvenue'} <span className="wave">✦</span></h1><p className="page-subtitle">Pilotez votre cybercafé depuis un tableau de bord interactif.</p></div><button className="primary-button" onClick={() => openModal('session')}><Plus size={18} /> Nouvelle session</button></section>
