@@ -6,12 +6,12 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from app.api.v1.endpoints.auth import AUTH_COOKIE_NAME
 from app.core.config import get_settings
 from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models import User
 
+AUTH_COOKIE_NAME = "lasynet_session"
 bearer_scheme = HTTPBearer(auto_error=False)
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
