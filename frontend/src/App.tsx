@@ -173,7 +173,6 @@ function App() {
     const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'lasynet-export.json'; link.click(); URL.revokeObjectURL(url);
     notify('Export des données du serveur préparé.');
   };
-  const enterDemo = () => { setScreen('login'); setAuthNotice('Le mode démonstration a été désactivé : connectez-vous avec un compte du serveur.'); };
   const returnToLanding = () => {
     clearToken();
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
@@ -193,7 +192,7 @@ function App() {
       setAuthNotice(error instanceof Error ? error.message : 'Connexion impossible. Vérifie l’API et tes identifiants.');
     }
   };
-  if (screen !== 'app') return <LandingPage screen={screen} onNavigate={setScreen} onSubmit={submitDemoAuth} onDemo={enterDemo} name={authName} setName={setAuthName} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} notice={authNotice} />;
+  if (screen !== 'app') return <LandingPage screen={screen} onNavigate={setScreen} onSubmit={submitDemoAuth} name={authName} setName={setAuthName} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} notice={authNotice} />;
 
   return <div className="app-shell">
     <Sidebar cafeName={store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} />
