@@ -1,124 +1,26 @@
 services:
-  auth-db:
-    image: postgres:13
-    container_name: cyber_cafe_auth_db
+  postgres:
+    image: postgres:16-alpine
+    container_name: cyber_cafe_postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${AUTH_DB_NAME}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "127.0.0.1:${AUTH_DB_PORT}:5432"
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
     volumes:
-      - ${DATA_VOLUME_PATH}/auth:/var/lib/postgresql/data
-    networks: [cyber_cafe_network]
-    restart: unless-stopped
-
-  clients-db:
-    image: postgres:13
-    container_name: cyber_cafe_clients_db
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${CLIENTS_DB_NAME}
-    ports:
-      - "127.0.0.1:${CLIENTS_DB_PORT}:5432"
-    volumes:
-      - ${DATA_VOLUME_PATH}/clients:/var/lib/postgresql/data
-    networks: [cyber_cafe_network]
-    restart: unless-stopped
-
-  computers-db:
-    image: postgres:13
-    container_name: cyber_cafe_computers_db
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${COMPUTERS_DB_NAME}
-    ports:
-      - "127.0.0.1:${COMPUTERS_DB_PORT}:5432"
-    volumes:
-      - ${DATA_VOLUME_PATH}/computers:/var/lib/postgresql/data
-    networks: [cyber_cafe_network]
-    restart: unless-stopped
-
-  sessions-db:
-    image: postgres:13
-    container_name: cyber_cafe_sessions_db
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${SESSIONS_DB_NAME}
-    ports:
-      - "127.0.0.1:${SESSIONS_DB_PORT}:5432"
-    volumes:
-      - ${DATA_VOLUME_PATH}/sessions:/var/lib/postgresql/data
-    networks: [cyber_cafe_network]
-    restart: unless-stopped
-
-  reporting-db:
-    image: postgres:13
-    container_name: cyber_cafe_reporting_db
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${REPORTING_DB_NAME}
-    ports:
-      - "127.0.0.1:${REPORTING_DB_PORT}:5432"
-    volumes:
-      - ${DATA_VOLUME_PATH}/reporting:/var/lib/postgresql/data
+      - ${DATA_VOLUME_PATH}/postgres:/var/lib/postgresql/data
     networks: [cyber_cafe_network]
     restart: unless-stopped
 
   redis:
     image: redis:7-alpine
     container_name: cyber_cafe_redis
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
     command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
     ports:
       - "127.0.0.1:${REDIS_PORT}:6379"
     volumes:
       - ${DATA_VOLUME_PATH}/redis:/data
-    networks: [cyber_cafe_network]
-    restart: unless-stopped
-
-  auth-service:
-    build:
-      context: ../backend/auth-service
-      dockerfile: Dockerfile
-    container_name: cyber_cafe_auth_service
-    ports:
-      - "127.0.0.1:${AUTH_SERVICE_PORT}:8001"
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@auth-db:5432/${AUTH_DB_NAME}
-      SECRET_KEY: ${JWT_SECRET_KEY}
-      ALGORITHM: ${JWT_ALGORITHM}
-      ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES}
-      ENVIRONMENT: ${ENVIRONMENT}
-      PYTHONPATH: /app
-    depends_on:
-      - auth-db
-    networks: [cyber_cafe_network]
-    restart: unless-stopped
-
-  clients-service:
-    build:
-      context: ../backend/clients-service
-      dockerfile: Dockerfile
-    container_name: cyber_cafe_clients_service
-    ports:
-      - "127.0.0.1:${CLIENTS_SERVICE_PORT}:8002"
-    environment:
-      CLIENTS_DB_HOST: clients-db
-      CLIENTS_DB_PORT: 5432
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      CLIENTS_DB_NAME: ${CLIENTS_DB_NAME}
-      CLIENTS_SERVICE_PORT: 8002
-      NODE_ENV: ${ENVIRONMENT}
-      CORS_ORIGINS: ${CORS_ORIGINS}
-    depends_on:
-      - clients-db
     networks: [cyber_cafe_network]
     restart: unless-stopped
 

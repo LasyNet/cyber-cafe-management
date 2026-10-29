@@ -1,15 +1,15 @@
 # 🖥️ Gestion de cyber-café
 
-Plateforme de gestion de cyber-café organisée en services backend et une interface web React. Le dépôt contient un service d'authentification FastAPI, un service de gestion des clients NestJS et une première interface frontend.
+Application de gestion de cyber-café avec une interface React et un backend Python unifié.
 
-## Architecture actuelle
-- **Frontend** : React, TypeScript, Vite et Lucide. Tableau de bord en cours de construction avec données de démonstration.
-- **Auth Service** : FastAPI, JWT et PostgreSQL.
-- **Clients Service** : NestJS, TypeORM et PostgreSQL.
-- **Infrastructure** : scripts et configuration Docker Compose (optionnels pour le développement local sans conteneurs).
-- **À venir** : connexion des données réelles, services ordinateurs/sessions/paiements, passerelle API et reporting.
+## Architecture
 
-## Démarrer le frontend sans Docker
+- **Frontend** : React, TypeScript, Vite et Lucide. L'interface contient actuellement des données de démonstration locales.
+- **Backend** : Python, FastAPI, SQLAlchemy 2 et Alembic. Le backend est en cours de reconstruction progressive.
+- **Base de données locale** : PostgreSQL, configuré via Docker Compose.
+- **Cache local optionnel** : Redis, disponible pour les besoins futurs.
+
+## Démarrer le frontend
 
 Prérequis : Node.js 20+ et npm.
 
@@ -29,35 +29,43 @@ npm run build
 npm run preview
 ```
 
-> La première version du frontend est une démonstration interactive. Les sessions, indicateurs et ordinateurs utilisent des données locales temporaires ; aucune donnée n'est encore envoyée aux services backend.
+> La première version du frontend est une démonstration interactive. Les sessions, indicateurs et ordinateurs utilisent des données locales temporaires ; les fonctionnalités métier ne sont pas encore connectées à l'API.
 
-## Services backend
+## Démarrer le backend Python
 
-### Auth Service
+Prérequis : Python 3.12+ et PostgreSQL.
+
 ```bash
-cd backend/auth-service
+cd backend
 python -m venv .venv
-# Activez l'environnement virtuel
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8001
+# Windows PowerShell : .venv\Scripts\Activate.ps1
+# Linux/macOS : source .venv/bin/activate
+python -m pip install -e ".[dev]"
+cp .env.example .env
+uvicorn app.main:app --reload --port 8000
 ```
 
-Configurez d'abord les variables requises dans `backend/auth-service/.env` à partir de `.env.example`.
+- Documentation interactive : http://localhost:8000/docs
+- Vérification de santé : http://localhost:8000/api/v1/health
 
-### Clients Service
+## Infrastructure locale (optionnelle)
+
+Depuis le dossier `infrastructure` :
+
 ```bash
-cd backend/clients-service
-npm ci
-npm run build
-npm test -- --runInBand
+./setup-env.sh
+./start-services.sh
 ```
 
-Configurez les variables de connexion PostgreSQL dans `backend/clients-service/.env` à partir de `env.example`.
+Cela démarre PostgreSQL et Redis avec Docker Compose. Le backend FastAPI se lance séparément depuis `backend/`.
 
-## Configuration et sécurité
-- Ne commitez jamais les fichiers `.env` ni les identifiants de base de données.
-- La connexion à Neon/PostgreSQL sera configurée séparément pour chaque service.
-- Avant une mise en production, prévoir TLS, migrations, sauvegardes, gestion des secrets et supervision.
+## Qualité et contribution
 
-## Contribution
-Créez une branche dédiée, testez vos changements et ouvrez une Pull Request vers `main`.
+```bash
+cd backend
+pytest
+ruff check app tests
+ruff format --check app tests
+```
+
+Travaillez sur une branche dédiée et ouvrez une Pull Request vers `DEV`. La branche `main` n'est mise à jour qu'après validation explicite.

@@ -1,6 +1,6 @@
 # Backend — Cyber Café
 
-Nouveau backend construit en **Python + FastAPI**, avec PostgreSQL, SQLAlchemy 2 et Alembic. Cette application constitue la base propre destinée à remplacer progressivement les anciens services backend.
+Backend unifié construit en **Python + FastAPI**, avec PostgreSQL, SQLAlchemy 2 et Alembic.
 
 ## Principes de conception
 
@@ -8,7 +8,7 @@ Nouveau backend construit en **Python + FastAPI**, avec PostgreSQL, SQLAlchemy 2
 - **Code simple et explicite** : fonctions courtes, noms métier clairs, pas d'abstraction prématurée ni de duplication.
 - **Typage** : annotations Python et validation des entrées/sorties.
 - **Sécurité par défaut** : secrets dans les variables d'environnement, validation des données, CORS explicite, aucune donnée sensible dans les logs.
-- **Persistance fiable** : PostgreSQL, migrations Alembic versionnées; pas de création automatique du schéma en production.
+- **Persistance fiable** : PostgreSQL et migrations Alembic versionnées; pas de création automatique du schéma en production.
 - **Tests** : tests automatisés pour les règles métier et les routes.
 - **Compatibilité** : contrat API versionné sous `/api/v1`.
 
@@ -31,7 +31,7 @@ backend/
 └── pyproject.toml
 ```
 
-Les modules métier seront ajoutés progressivement à partir des besoins de l'application : authentification et rôles, clients, postes informatiques, sessions, paiements, produits/ventes, recettes, notifications, messagerie et corbeille. Les anciens services ne seront supprimés qu'après migration, tests et validation des contrats nécessaires au frontend.
+Les modules métier seront ajoutés progressivement à partir des besoins de l'application : authentification et rôles, clients, postes informatiques, sessions, paiements, produits/ventes, recettes, notifications, messagerie et corbeille.
 
 ## Développement local
 
@@ -54,8 +54,8 @@ uvicorn app.main:app --reload --port 8000
 
 ```bash
 pytest
-ruff check .
-ruff format --check .
+ruff check app tests
+ruff format --check app tests
 ```
 
 Avant d'implémenter les domaines métier, vérifier les écrans et types du frontend pour conserver un contrat API cohérent. Chaque domaine devra être livré avec validation, gestion d'erreurs, migrations et tests.

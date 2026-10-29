@@ -21,11 +21,9 @@ fi
 cp env.example .env
 postgres_password="$(openssl rand -hex 24)"
 redis_password="$(openssl rand -hex 24)"
-jwt_secret="$(openssl rand -hex 32)"
 sed -i \
   -e "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=${postgres_password}/" \
-  -e "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=${redis_password}/" \
-  -e "s/^JWT_SECRET_KEY=.*/JWT_SECRET_KEY=${jwt_secret}/" .env
+  -e "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=${redis_password}/" .env
 chmod 600 .env
 echo "Fichier .env créé avec des secrets aléatoires (permissions 600)."
 echo "Vérifiez les variables locales, puis lancez ./start-services.sh."

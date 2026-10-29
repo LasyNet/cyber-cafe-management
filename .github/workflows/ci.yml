@@ -15,54 +15,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Node.js for frontend
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm install --no-audit --no-fund
-
       - name: Build frontend
         working-directory: frontend
         run: npm run build
-
       - name: Set up Python for backend
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/pyproject.toml
-
-      - name: Install clean Python backend
+      - name: Install Python backend
         working-directory: backend
         run: python -m pip install --disable-pip-version-check -e ".[dev]"
-
-      - name: Test clean Python backend
+      - name: Test Python backend
         working-directory: backend
         run: pytest
-
-      - name: Lint clean Python backend
+      - name: Lint Python backend
         working-directory: backend
         run: ruff check app tests
-
       - name: Check Python formatting
         working-directory: backend
         run: ruff format --check app tests
-
-      - name: Validate legacy auth service syntax during migration
-        run: |
-          python -m pip install --disable-pip-version-check -r backend/auth-service/requirements.txt
-          python -m compileall -q backend/auth-service/app
-
       - name: Validate Docker Compose configuration
         run: |
           cp infrastructure/env.example infrastructure/.env
           docker compose --env-file infrastructure/.env -f infrastructure/docker-compose.yml config --quiet
-
-      - name: Build legacy auth service image during migration
-        run: |
-          cp infrastructure/env.example infrastructure/.env
-          docker compose --env-file infrastructure/.env -f infrastructure/docker-compose.yml build auth-service
