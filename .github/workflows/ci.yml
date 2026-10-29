@@ -20,8 +20,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            frontend/package.json
+            backend/clients-service/package-lock.json
 
-      # Active: the frontend is currently the only application module in use.
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm install --no-audit --no-fund
@@ -30,28 +33,30 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      # Temporarily disabled: the clients backend service is not currently used.
-      # Re-enable these steps when backend/clients-service is brought into use.
-      # - name: Install clients service dependencies
-      #   working-directory: backend/clients-service
-      #   run: npm ci
-      #
-      # - name: Build clients service
-      #   working-directory: backend/clients-service
-      #   run: npm run build
+      - name: Install clients service dependencies
+        working-directory: backend/clients-service
+        run: npm ci
 
-      # Temporarily disabled: the Python authentication service is not currently used.
-      # - name: Check Python syntax
-      #   run: python -m compileall -q backend/auth-service/app
+      - name: Build clients service
+        working-directory: backend/clients-service
+        run: npm run build
 
-      # Temporarily disabled: the app currently uses frontend localStorage mock data,
-      # so the backend Docker services and Compose configuration are not needed.
-      # Re-enable when backend services are actively used/deployed.
-      # - name: Validate Docker Compose configuration
-      #   run: |
-      #     cp infrastructure/env.example infrastructure/.env
-      #     docker compose --env-file infrastructure/.env -f infrastructure/docker-compose.yml config --quiet
-      #
-      # - name: Build backend Docker images
-      #   run: |
-      #     docker compose --env-file infrastructure/.env -f infrastructure/docker-compose.yml build auth-service clients-service
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install auth service dependencies
+        run: python -m pip install --disable-pip-version-check -r backend/auth-service/requirements.txt
+
+      - name: Check Python syntax
+        run: python -m compileall -q backend/auth-service/app
+
+      - name: Validate Docker Compose configuration
+        run: |
+          cp infrastructure/env.example infrastructure/.env
+          docker compose --env-file infrastructure/.env -f infrastructure/docker-compose.yml config --quiet
+
+      - name: Build backend Docker images
+        run: |
+          docker compose --env-file infrastructure/.env -f infrastructure/docker-compose.yml build auth-service clients-service
