@@ -44,19 +44,19 @@ export function LandingPage({ screen, onNavigate, onSubmit, name, setName, email
         <div className="landing-hero-actions"><button className="landing-primary" onClick={() => onNavigate('login')}>Se connecter <ArrowRight size={17}/></button></div>
         <div className="landing-trust"><div className="landing-avatars"><span>G</span><span>C</span><span>L</span></div><div><strong>Tout au même endroit</strong><span>Une vue claire sur votre quotidien.</span></div></div>
       </div>
-      <div className="landing-visual" aria-label="Aperçu du tableau de bord LasyNet">
+      <div className="landing-visual" aria-label="Fonctionnalités de LasyNet">
         <div className="visual-glow"/>
         <div className="visual-window">
-          <div className="visual-top"><div className="visual-dots"><i/><i/><i/></div><span>lasynet · Tableau de bord</span><span className="visual-live"><i/> En direct</span></div>
-          <div className="visual-body"><aside className="visual-sidebar"><div className="visual-brand"><span>LN</span><b>LasyNet</b></div><div className="visual-nav active"><Gauge size={14}/> Vue d’ensemble</div><div className="visual-nav"><Monitor size={14}/> Ordinateurs</div><div className="visual-nav"><Clock3 size={14}/> Sessions</div><div className="visual-nav"><Users size={14}/> Clients</div><div className="visual-nav"><CreditCard size={14}/> Paiements</div><div className="visual-mini-card"><ShieldCheck size={15}/><span>Votre activité<br/><b>en un clin d’œil</b></span></div></aside>
-            <div className="visual-dashboard"><div className="visual-heading"><div><small>VOTRE ESPACE</small><h3>Bonjour, Administrateur ✦</h3><p>Voici le résumé de votre activité.</p></div><span className="visual-date">Aujourd’hui⌄</span></div>
-              <div className="visual-stats"><div><span>Revenus encaissés</span><strong>248 000 <small>Ar</small></strong><em>↗ Aujourd’hui</em></div><div><span>Sessions actives</span><strong>08</strong><em>En cours</em></div><div><span>Postes disponibles</span><strong>12 <small>/ 20</small></strong><em>Prêts à l’utilisation</em></div></div>
-              <div className="visual-chart-card"><div><strong>Activité du cybercafé</strong><span>Cette semaine</span></div><div className="visual-chart"><i style={{height:'36%'}}/><i style={{height:'55%'}}/><i style={{height:'42%'}}/><i style={{height:'76%'}}/><i style={{height:'62%'}}/><i style={{height:'91%'}}/><i style={{height:'70%'}}/></div><div className="visual-days"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div></div>
+          <div className="visual-top"><div className="visual-dots"><i/><i/><i/></div><span>LasyNet · Espace de gestion</span><span className="visual-live"><i/> Connecté à l’API</span></div>
+          <div className="visual-body">
+            <aside className="visual-sidebar"><div className="visual-brand"><span>LN</span><b>LasyNet</b></div><div className="visual-nav active"><Gauge size={14}/> Vue d’ensemble</div><div className="visual-nav"><Monitor size={14}/> Ordinateurs</div><div className="visual-nav"><Clock3 size={14}/> Sessions</div><div className="visual-nav"><Users size={14}/> Clients</div><div className="visual-nav"><CreditCard size={14}/> Paiements</div><div className="visual-mini-card"><ShieldCheck size={15}/><span>Vos données<br/><b>dans votre base</b></span></div></aside>
+            <div className="visual-dashboard">
+              <div className="visual-heading"><div><small>ESPACE DE GESTION</small><h3>Votre activité, en un seul endroit.</h3><p>Les informations affichées proviennent du serveur.</p></div></div>
+              <div className="landing-data-points"><div><Monitor size={20}/><strong>Parc informatique</strong><span>Consultez et gérez vos postes.</span></div><div><Clock3 size={20}/><strong>Sessions</strong><span>Suivez les sessions en cours.</span></div><div><CreditCard size={20}/><strong>Paiements</strong><span>Retrouvez les règlements enregistrés.</span></div></div>
+              <p className="landing-data-note"><ShieldCheck size={16}/> Aucun chiffre d’exemple : connectez-vous pour consulter vos données réelles.</p>
             </div>
           </div>
         </div>
-        <div className="visual-float visual-float-top"><span><CheckCircle2 size={17}/></span><div><strong>Session démarrée</strong><small>Poste PC-08 · à l’instant</small></div></div>
-        <div className="visual-float visual-float-bottom"><span className="float-purple"><CreditCard size={17}/></span><div><strong>Paiement enregistré</strong><small>+ 12 000 Ar</small></div></div>
       </div>
     </section>
     <section className="landing-proof"><div><strong>Tout est centralisé</strong><span>Les outils essentiels, réunis dans un seul espace.</span></div><div className="proof-item"><Monitor size={18}/><span>Parc informatique</span></div><div className="proof-item"><Clock3 size={18}/><span>Suivi des sessions</span></div><div className="proof-item"><CreditCard size={18}/><span>Suivi des paiements</span></div><div className="proof-item"><ShieldCheck size={18}/><span>Contrôle simplifié</span></div></section>
