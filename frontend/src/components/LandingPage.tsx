@@ -1,31 +1,29 @@
 import type { FormEvent } from 'react';
 import { ArrowRight, CheckCircle2, Clock3, CreditCard, Gauge, Monitor, Plus, ShieldCheck, Users } from 'lucide-react';
 
-type LandingScreen = 'landing' | 'login' | 'signup';
+type LandingScreen = 'landing' | 'login';
 export function LandingPage({ screen, onNavigate, onSubmit, name, setName, email, setEmail, password, setPassword, notice }: {
   screen: LandingScreen;
-  onNavigate: (screen: 'landing' | 'login' | 'signup' | 'app') => void;
+  onNavigate: (screen: 'landing' | 'login' | 'app') => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  name: string; setName: (value: string) => void;
   email: string; setEmail: (value: string) => void;
   password: string; setPassword: (value: string) => void;
   notice: string;
 }) {
-  if (screen === 'login' || screen === 'signup') return <main className="auth-page">
+  if (screen === 'login') return <main className="auth-page">
     <button className="landing-brand auth-back" onClick={() => onNavigate('landing')}><span className="landing-logo">LN</span><span>LasyNet</span></button>
     <section className="auth-card">
       <div className="landing-eyebrow"><span className="landing-live-dot"/> ESPACE DE GESTION</div>
-      <h1>{screen === 'login' ? 'Heureux de vous revoir.' : 'Connexion du personnel'}</h1>
-      <p>{screen === 'login' ? 'Connectez-vous pour retrouver votre activité.' : 'Connectez-vous avec les identifiants fournis par votre administrateur.'}</p>
+      <h1>Heureux de vous revoir.</h1>
+      <p>Connectez-vous avec les identifiants fournis par votre administrateur.</p>
       <form onSubmit={onSubmit} className="auth-form">
-        {screen === 'signup' && <label>Nom complet<input value={name} onChange={event => setName(event.target.value)} placeholder="Ex. Rakoto Jean" autoComplete="name" required /></label>}
         <label>Adresse e-mail<input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="vous@exemple.com" autoComplete="email" required /></label>
-        <label>Mot de passe<input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Au moins 8 caractères" autoComplete={screen === 'login' ? 'current-password' : 'current-password'} minLength={8} required /></label>
+        <label>Mot de passe<input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Au moins 8 caractères" autoComplete="current-password" minLength={8} required /></label>
         {notice && <div className="auth-notice" role="alert">{notice}</div>}
-        <button className="landing-primary auth-submit" type="submit">{screen === 'login' ? 'Se connecter' : 'Se connecter'} <ArrowRight size={17}/></button>
+        <button className="landing-primary auth-submit" type="submit">Se connecter <ArrowRight size={17}/></button>
       </form>
       <div className="auth-demo-note"><ShieldCheck size={17}/><span>Connexion protégée par le serveur. Vos identifiants sont vérifiés par l’API.</span></div>
-      <div className="auth-switch">{screen === 'login' ? 'Accès réservé au personnel autorisé.' : 'La création de compte est gérée par un administrateur.'} {screen === 'signup' && <button onClick={() => onNavigate('login')}>Se connecter</button>}</div>
+      <div className="auth-switch">Accès réservé au personnel autorisé. La création des comptes est gérée par un administrateur.</div>
     </section>
     <div className="auth-footer">© 2026 LasyNet · Gestion de cybercafé</div>
   </main>;
