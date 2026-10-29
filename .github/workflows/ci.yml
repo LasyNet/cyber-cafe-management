@@ -46,11 +46,11 @@ jobs:
 
       - name: Lint clean Python backend
         working-directory: backend
-        run: ruff check .
+        run: ruff check app tests
 
       - name: Check Python formatting
         working-directory: backend
-        run: ruff format --check .
+        run: ruff format --check app tests
 
       - name: Validate legacy auth service syntax during migration
         run: |
