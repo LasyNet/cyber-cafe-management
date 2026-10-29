@@ -59,3 +59,24 @@ ruff format --check app tests
 ```
 
 Avant d'implémenter les domaines métier, vérifier les écrans et types du frontend pour conserver un contrat API cohérent. Chaque domaine devra être livré avec validation, gestion d'erreurs, migrations et tests.
+
+
+## Base Neon et migrations
+
+La connexion est lue depuis la variable d'environnement `DATABASE_URL`. Sur Render, ajoute la chaîne de connexion PostgreSQL de Neon dans les variables d'environnement du service backend. Ne la committe jamais dans Git. Le code accepte les formats `postgres://`, `postgresql://` et `postgresql+psycopg://`.
+
+Les migrations sont versionnées dans `migrations/versions` et ne sont pas exécutées automatiquement à l'import de l'application.
+
+```bash
+cd backend
+alembic upgrade head
+alembic current
+```
+
+Pour Render, avec **Root Directory = `backend`**, utilise `pip install -e .` comme Build Command. Pour appliquer les migrations avant le démarrage de l'API, configure la Start Command ainsi :
+
+```bash
+alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+Cette commande applique uniquement les migrations non encore exécutées, puis démarre FastAPI. Elle suppose que `DATABASE_URL` est configurée dans Render et pointe vers la base Neon prévue pour cet environnement. Ne lance pas cette configuration contre une base contenant déjà des données importantes sans avoir vérifié son état.
