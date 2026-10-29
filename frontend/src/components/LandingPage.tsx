@@ -1,8 +1,8 @@
 import type { FormEvent } from 'react';
-import { ArrowRight, CheckCircle2, Clock3, CreditCard, Gauge, Monitor, Plus, ShieldCheck, Users } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock3, CreditCard, Gauge, Monitor, ShieldCheck, Users } from 'lucide-react';
 
 type LandingScreen = 'landing' | 'login';
-export function LandingPage({ screen, onNavigate, onSubmit, name, setName, email, setEmail, password, setPassword, notice }: {
+export function LandingPage({ screen, onNavigate, onSubmit, email, setEmail, password, setPassword, notice }: {
   screen: LandingScreen;
   onNavigate: (screen: 'landing' | 'login' | 'app') => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
