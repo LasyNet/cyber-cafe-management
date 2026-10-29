@@ -42,9 +42,18 @@ const json = (method: string, body?: unknown): RequestInit => ({
 });
 
 export async function login(email: string, password: string): Promise<AuthUser> {
-  const token = await request<{ access_token: string }>('/auth/login', json('POST', { email, password }));
-  window.localStorage.setItem(TOKEN_KEY, token.access_token);
-  return request<AuthUser>('/auth/me');
+  clearToken();
+  try {
+    const token = await request<{ access_token: string }>('/auth/login', json('POST', { email, password }));
+    if (!token.access_token) throw new Error('Le serveur n’a pas retourné de jeton de connexion.');
+    window.localStorage.setItem(TOKEN_KEY, token.access_token);
+    const user = await request<AuthUser>('/auth/me');
+    if (!user.is_active) throw new Error('Ce compte est désactivé.');
+    return user;
+  } catch (error) {
+    clearToken();
+    throw error;
+  }
 }
 export const currentUser = () => request<AuthUser>('/auth/me');
 
