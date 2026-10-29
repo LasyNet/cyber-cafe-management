@@ -95,7 +95,7 @@ Créer un compte après avoir appliqué les migrations et configuré `DATABASE_U
 
 ```bash
 cd backend
-python scripts/create_user.py
+python -m scripts.create_user
 ```
 
 Le script demande le nom, l'e-mail, le rôle et le mot de passe de manière interactive. Créer le premier compte avec le rôle `admin`. Pour se connecter, envoyer un JSON `{"email":"admin@example.com","password":"..." }` à `POST /api/v1/auth/login`, puis transmettre le jeton retourné dans l'en-tête `Authorization: Bearer <token>`.
