@@ -13,7 +13,7 @@ export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate,
   return (
       <aside className="sidebar">
         <div className="brand"><div className="brand-mark" aria-label="Logo LasyNet"><span>LN</span></div><div><span className="brand-name">LasyNet</span><span className="brand-caption">GESTION CYBERCAFÉ</span></div></div>
-        <div className="workspace"><div className="workspace-icon"><Wifi size={17} /></div><div className="workspace-copy"><strong>{cafeName}</strong><span>Gestion locale · Démo</span></div><ChevronDown size={15} className="muted-icon" /></div>
+        <div className="workspace"><div className="workspace-icon"><Wifi size={17} /></div><div className="workspace-copy"><strong>{cafeName}</strong><span>Connecté · Données serveur</span></div><ChevronDown size={15} className="muted-icon" /></div>
         <div className="nav-label">MENU PRINCIPAL</div>
         <nav className="navigation">{nav.slice(0, 5).map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activePage === label ? 'active' : ''}`} onClick={() => onNavigate(label)}><Icon size={18} strokeWidth={1.9} /><span>{label}</span>{label === 'Sessions' && activeSessionsCount > 0 && <span className="nav-count">{activeSessionsCount}</span>}</button>)}</nav>
         <div className="nav-label management-label">GESTION</div>
