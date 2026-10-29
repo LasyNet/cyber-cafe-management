@@ -12,6 +12,12 @@ from app.core.config import get_settings
 def create_app() -> FastAPI:
     """Build the application with explicit, testable configuration."""
     settings = get_settings()
+    if settings.app_env.lower() == "production" and (
+        len(settings.auth_secret_key) < 32
+        or settings.auth_secret_key == "local-development-secret-change-me"
+        or settings.auth_secret_key == "replace-with-a-long-random-secret-before-deploying"
+    ):
+        raise RuntimeError("Configure a unique random AUTH_SECRET_KEY of at least 32 characters.")
     application = FastAPI(
         title=settings.app_name,
         version="0.1.0",
