@@ -11,6 +11,13 @@ import {
   Activity, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, Pencil, Play
 } from 'lucide-react';
 
+function screenFromPath(): 'landing' | 'login' | 'app' {
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  if (path === '/login') return 'login';
+  if (path === '/app') return getToken() ? 'app' : 'login';
+  return 'landing';
+}
+
 function App() {
   const [store, setStore] = useState<Store>({ computers: [], clients: [], sessions: [], payments: [], settings: { cafeName: '', hourlyRate: 0, currency: 'Ar' } });
   const [activePage, setActivePage] = useState<Page>(() => pageFromHash());
@@ -34,17 +41,27 @@ function App() {
   const [paymentFilter, setPaymentFilter] = useState<'Tous' | Payment['status']>('Tous');
   const [paymentMethods, setPaymentMethods] = useState<Record<string, Payment['method']>>({});
   const [selectedInvoice, setSelectedInvoice] = useState<Payment | null>(null);
-  const [screen, setScreen] = useState<'landing' | 'login' | 'app'>(() => getToken() ? 'app' : 'landing');
+  const [screen, setScreen] = useState<'landing' | 'login' | 'app'>(screenFromPath);
   const [authName, setAuthName] = useState('');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authNotice, setAuthNotice] = useState('');
 
+  const navigateScreen = (next: 'landing' | 'login' | 'app') => {
+    const path = next === 'landing' ? '/' : next === 'login' ? '/login' : '/app';
+    const hash = next === 'app' ? '#dashboard' : '';
+    if (window.location.pathname !== path || window.location.hash !== hash) {
+      window.history.pushState(null, '', `${path}${hash}`);
+    }
+    setScreen(next);
+    if (next === 'app') setActivePage('Vue d’ensemble');
+  };
+
   const refreshStore = async () => { const fresh = await loadStore(); setStore(fresh); };
   useEffect(() => {
     if (screen !== 'app') return;
     let cancelled = false;
-    const unauthorized = () => { if (!cancelled) { setScreen('login'); setAuthNotice('Votre session a expiré. Connectez-vous à nouveau.'); } };
+    const unauthorized = () => { if (!cancelled) { navigateScreen('login'); setAuthNotice('Votre session a expiré. Connectez-vous à nouveau.'); } };
     window.addEventListener('lasynet:unauthorized', unauthorized);
     (async () => {
       try {
@@ -57,7 +74,7 @@ function App() {
       } catch (error) {
         if (!cancelled) {
           clearToken();
-          setScreen('login');
+          navigateScreen('login');
           setAuthNotice(error instanceof Error ? error.message : 'Impossible de charger votre session.');
         }
       }
@@ -70,11 +87,23 @@ function App() {
     if (window.location.hash.slice(1) !== slug) window.history.pushState(null, '', `#${slug}`);
   }, [activePage, screen]);
   useEffect(() => {
+    const syncRouteWithHistory = () => {
+      const path = window.location.pathname.replace(/\/+$/, '') || '/';
+      if (path === '/app') {
+        if (getToken()) setScreen('app');
+        else {
+          window.history.replaceState(null, '', '/login');
+          setScreen('login');
+        }
+      } else if (path === '/login') setScreen('login');
+      else setScreen('landing');
+      if (path === '/app') setActivePage(pageFromHash());
+    };
     const syncPageWithHistory = () => setActivePage(pageFromHash());
-    window.addEventListener('popstate', syncPageWithHistory);
+    window.addEventListener('popstate', syncRouteWithHistory);
     window.addEventListener('hashchange', syncPageWithHistory);
     return () => {
-      window.removeEventListener('popstate', syncPageWithHistory);
+      window.removeEventListener('popstate', syncRouteWithHistory);
       window.removeEventListener('hashchange', syncPageWithHistory);
     };
   }, []);
@@ -175,7 +204,7 @@ function App() {
   };
   const logout = () => {
     clearToken();
-    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    window.history.replaceState(null, '', '/login');
     setAuthPassword('');
     setAuthNotice('');
     setScreen('login');
@@ -186,13 +215,12 @@ function App() {
     setAuthNotice('');
     try {
       await login(authEmail.trim(), authPassword);
-      setScreen('app');
-      setActivePage('Vue d’ensemble');
+      navigateScreen('app');
     } catch (error) {
       setAuthNotice(error instanceof Error ? error.message : 'Connexion impossible. Vérifie l’API et tes identifiants.');
     }
   };
-  if (screen !== 'app') return <LandingPage screen={screen} onNavigate={setScreen} onSubmit={submitAuth} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} notice={authNotice} />;
+  if (screen !== 'app') return <LandingPage screen={screen} onNavigate={navigateScreen} onSubmit={submitAuth} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} notice={authNotice} />;
 
   return <div className="app-shell">
     <Sidebar cafeName={store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} />
