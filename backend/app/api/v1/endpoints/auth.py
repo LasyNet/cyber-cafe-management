@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import AUTH_COOKIE_NAME, get_current_user
 from app.core.config import get_settings
 from app.core.security import TOKEN_TTL_SECONDS, create_access_token, verify_password
 from app.db.session import get_db
@@ -14,7 +14,6 @@ from app.models import User
 from app.schemas.auth import LoginRequest, TokenResponse, UserRead
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
-AUTH_COOKIE_NAME = "lasynet_session"
 
 
 def _require_trusted_origin(request: Request) -> None:
