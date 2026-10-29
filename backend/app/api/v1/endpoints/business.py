@@ -1,3 +1,4 @@
+# ruff: noqa: B008
 """Database-backed CRUD endpoints for the cyber-café domain.
 
 These endpoints intentionally centralize validation and transaction handling. Production
@@ -5,7 +6,7 @@ deployment must put them behind the application's authentication/authorization l
 the frontend switches from demo mode to persisted data.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -40,7 +41,10 @@ def _commit(db: Session) -> None:
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="La modification entre en conflit avec les données existantes.") from exc
+        raise HTTPException(
+            status_code=409,
+            detail="La modification entre en conflit avec les données existantes.",
+        ) from exc
 
 
 def _get_or_404(db: Session, model: type, resource_id: str):
@@ -96,7 +100,10 @@ def list_computers(db: Session = Depends(get_db)):
 def create_computer(payload: ComputerCreate, db: Session = Depends(get_db)):
     data = payload.model_dump()
     if data["computer_type"] == "Interne" and not data["mac_address"]:
-        raise HTTPException(status_code=422, detail="Une adresse MAC est obligatoire pour un poste interne.")
+        raise HTTPException(
+            status_code=422,
+            detail="Une adresse MAC est obligatoire pour un poste interne.",
+        )
     if data["computer_type"] == "Externe":
         data["mac_address"] = None
     computer = Computer(**data)
@@ -118,7 +125,10 @@ def update_computer(computer_id: str, payload: ComputerUpdate, db: Session = Dep
     new_type = data.get("computer_type", computer.computer_type)
     new_mac = data.get("mac_address", computer.mac_address)
     if new_type == "Interne" and not new_mac:
-        raise HTTPException(status_code=422, detail="Une adresse MAC est obligatoire pour un poste interne.")
+        raise HTTPException(
+            status_code=422,
+            detail="Une adresse MAC est obligatoire pour un poste interne.",
+        )
     if new_type == "Externe":
         data["mac_address"] = None
     for key, value in data.items():
@@ -131,8 +141,16 @@ def update_computer(computer_id: str, payload: ComputerUpdate, db: Session = Dep
 @router.delete("/computers/{computer_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_computer(computer_id: str, db: Session = Depends(get_db)):
     computer = _get_or_404(db, Computer, computer_id)
-    if db.scalar(select(CafeSession.id).where(CafeSession.computer_id == computer_id, CafeSession.status == "En cours")):
-        raise HTTPException(status_code=409, detail="Terminez la session active avant de supprimer ce poste.")
+    if db.scalar(
+        select(CafeSession.id).where(
+            CafeSession.computer_id == computer_id,
+            CafeSession.status == "En cours",
+        )
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="Terminez la session active avant de supprimer ce poste.",
+        )
     db.delete(computer)
     _commit(db)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -148,7 +166,9 @@ def create_session(payload: SessionCreate, db: Session = Depends(get_db)):
     computer = _get_or_404(db, Computer, payload.computer_id)
     _get_or_404(db, Client, payload.client_id)
     if computer.status != "Disponible":
-        raise HTTPException(status_code=409, detail="Cet ordinateur n'est pas disponible.")
+        raise HTTPException(
+            status_code=409, detail="Cet ordinateur n'est pas disponible."
+        )
     session = CafeSession(**payload.model_dump())
     computer.status = "En cours"
     db.add(session)
@@ -167,7 +187,7 @@ def update_session(session_id: str, payload: SessionUpdate, db: Session = Depend
     session = _get_or_404(db, CafeSession, session_id)
     data = payload.model_dump(exclude_unset=True)
     if data.get("status") == "Terminée" and not data.get("ended_at"):
-        data["ended_at"] = datetime.now(timezone.utc)
+        data["ended_at"] = datetime.now(UTC)
     if data.get("status") == "En cours":
         raise HTTPException(status_code=422, detail="Une session terminée ne peut pas être réactivée.")
     for key, value in data.items():
@@ -191,10 +211,13 @@ def create_payment(payload: PaymentCreate, db: Session = Depends(get_db)):
     session = _get_or_404(db, CafeSession, payload.session_id)
     _get_or_404(db, Client, payload.client_id)
     if session.client_id != payload.client_id:
-        raise HTTPException(status_code=422, detail="Le client du paiement doit correspondre à celui de la session.")
+        raise HTTPException(
+            status_code=422,
+            detail="Le client du paiement doit correspondre à celui de la session.",
+        )
     data = payload.model_dump()
     if data["status"] == "Payé" and data["paid_at"] is None:
-        data["paid_at"] = datetime.now(timezone.utc)
+        data["paid_at"] = datetime.now(UTC)
     payment = Payment(**data)
     db.add(payment)
     _commit(db)
@@ -207,7 +230,7 @@ def update_payment(payment_id: str, payload: PaymentUpdate, db: Session = Depend
     payment = _get_or_404(db, Payment, payment_id)
     data = payload.model_dump(exclude_unset=True)
     if data.get("status") == "Payé" and not data.get("paid_at"):
-        data["paid_at"] = datetime.now(timezone.utc)
+        data["paid_at"] = datetime.now(UTC)
     for key, value in data.items():
         setattr(payment, key, value)
     _commit(db)
@@ -219,7 +242,12 @@ def update_payment(payment_id: str, payload: PaymentUpdate, db: Session = Depend
 def get_settings(db: Session = Depends(get_db)):
     settings = db.get(AppSetting, 1)
     if settings is None:
-        settings = AppSetting(id=1, cafe_name="Cyber Café Central", hourly_rate=Decimal("1200"), currency="Ar")
+        settings = AppSetting(
+            id=1,
+            cafe_name="Cyber Café Central",
+            hourly_rate=Decimal("1200"),
+            currency="Ar",
+        )
         db.add(settings)
         _commit(db)
         db.refresh(settings)
@@ -230,7 +258,12 @@ def get_settings(db: Session = Depends(get_db)):
 def update_settings(payload: SettingsUpdate, db: Session = Depends(get_db)):
     settings = db.get(AppSetting, 1)
     if settings is None:
-        settings = AppSetting(id=1, cafe_name="Cyber Café Central", hourly_rate=Decimal("1200"), currency="Ar")
+        settings = AppSetting(
+            id=1,
+            cafe_name="Cyber Café Central",
+            hourly_rate=Decimal("1200"),
+            currency="Ar",
+        )
         db.add(settings)
     for key, value in payload.model_dump(exclude_unset=True).items():
         if value is not None:
