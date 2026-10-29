@@ -2,7 +2,7 @@ import type { AppSettings, Client, Computer, Payment, Session, Store } from '../
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 const API_PREFIX = '/api/v1';
-const TOKEN_KEY = 'lasynet-access-token';
+const LEGACY_TOKEN_KEY = 'lasynet-access-token';
 
 export type AuthUser = { id: string; full_name: string; email: string; role: string; is_active: boolean };
 type ApiComputer = { id: string; name: string; computer_type: Computer['type']; mac_address: string | null; status: Computer['status'] };
@@ -11,16 +11,21 @@ type ApiSession = { id: string; computer_id: string; client_id: string; started_
 type ApiPayment = { id: string; session_id: string; client_id: string; amount: number | string; method: Payment['method']; paid_at: string | null; status: Payment['status']; created_at: string };
 type ApiSettings = { id: number; cafe_name: string; hourly_rate: number | string; currency: string };
 
-export const getToken = () => window.localStorage.getItem(TOKEN_KEY);
-export const clearToken = () => window.localStorage.removeItem(TOKEN_KEY);
+// Legacy tokens are removed during migration. Authentication is carried only by an HttpOnly cookie.
+export const clearToken = () => {
+  try {
+    window.localStorage.removeItem(LEGACY_TOKEN_KEY);
+  } catch {
+    // Storage may be disabled by the browser; the server cookie remains authoritative.
+  }
+};
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = getToken();
   const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
     ...init,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },
   });
@@ -43,18 +48,25 @@ const json = (method: string, body?: unknown): RequestInit => ({
 
 export async function login(email: string, password: string): Promise<AuthUser> {
   clearToken();
+  await request<{ expires_in: number }>('/auth/login', json('POST', { email, password }));
   try {
-    const token = await request<{ access_token: string }>('/auth/login', json('POST', { email, password }));
-    if (!token.access_token) throw new Error('Le serveur n’a pas retourné de jeton de connexion.');
-    window.localStorage.setItem(TOKEN_KEY, token.access_token);
-    const user = await request<AuthUser>('/auth/me');
+    const user = await currentUser();
     if (!user.is_active) throw new Error('Ce compte est désactivé.');
     return user;
   } catch (error) {
-    clearToken();
+    await logoutSession().catch(() => undefined);
     throw error;
   }
 }
+
+export async function logoutSession(): Promise<void> {
+  try {
+    await request<void>('/auth/logout', json('POST'));
+  } finally {
+    clearToken();
+  }
+}
+
 export const currentUser = () => request<AuthUser>('/auth/me');
 
 export async function loadStore(): Promise<Store> {
