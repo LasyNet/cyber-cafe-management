@@ -1,4 +1,4 @@
-import type { AppSettings, Client, Computer, Payment, Session, Store } from '../data/mockStore';
+import type { AppSettings, Client, Computer, Payment, Session, Store } from '../types/domain';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 const API_PREFIX = '/api/v1';
