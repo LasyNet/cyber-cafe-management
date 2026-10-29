@@ -1,7 +1,7 @@
 """Schema contract tests that do not require a live PostgreSQL connection."""
 
-from app.db.base import Base
 import app.models  # noqa: F401 — register model metadata
+from app.db.base import Base
 
 
 def test_expected_domain_tables_are_registered() -> None:
