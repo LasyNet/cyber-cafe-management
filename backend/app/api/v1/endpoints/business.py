@@ -166,9 +166,7 @@ def create_session(payload: SessionCreate, db: Session = Depends(get_db)):
     computer = _get_or_404(db, Computer, payload.computer_id)
     _get_or_404(db, Client, payload.client_id)
     if computer.status != "Disponible":
-        raise HTTPException(
-            status_code=409, detail="Cet ordinateur n'est pas disponible."
-        )
+        raise HTTPException(status_code=409, detail="Cet ordinateur n'est pas disponible.")
     session = CafeSession(**payload.model_dump())
     computer.status = "En cours"
     db.add(session)
