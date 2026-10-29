@@ -34,7 +34,7 @@ function App() {
   const [paymentFilter, setPaymentFilter] = useState<'Tous' | Payment['status']>('Tous');
   const [paymentMethods, setPaymentMethods] = useState<Record<string, Payment['method']>>({});
   const [selectedInvoice, setSelectedInvoice] = useState<Payment | null>(null);
-  const [screen, setScreen] = useState<'landing' | 'login' | 'signup' | 'app'>(() => getToken() ? 'app' : 'landing');
+  const [screen, setScreen] = useState<'landing' | 'login' | 'app'>(() => getToken() ? 'app' : 'landing');
   const [authName, setAuthName] = useState('');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
@@ -181,7 +181,6 @@ function App() {
   };
   const submitAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (screen === 'signup') { setAuthNotice('La création de compte public est désactivée. Demandez à un administrateur de créer votre compte.'); return; }
     if (!authEmail.trim() || !authPassword.trim()) { setAuthNotice('Saisis ton adresse e-mail et ton mot de passe.'); return; }
     setAuthNotice('');
     try {
@@ -192,7 +191,7 @@ function App() {
       setAuthNotice(error instanceof Error ? error.message : 'Connexion impossible. Vérifie l’API et tes identifiants.');
     }
   };
-  if (screen !== 'app') return <LandingPage screen={screen} onNavigate={setScreen} onSubmit={submitAuth} name={authName} setName={setAuthName} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} notice={authNotice} />;
+  if (screen !== 'app') return <LandingPage screen={screen} onNavigate={setScreen} onSubmit={submitAuth} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} notice={authNotice} />;
 
   return <div className="app-shell">
     <Sidebar cafeName={store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} />
