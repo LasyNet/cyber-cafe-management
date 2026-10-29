@@ -1,6 +1,6 @@
 import type { AppSettings, Client, Computer, Payment, Session, Store } from '../types/domain';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+const API_BASE = (import.meta.env.VITE_API_BASE_URL?.trim() || (import.meta.env.DEV ? 'http://localhost:8000' : '')).replace(/\/$/, '');
 const API_PREFIX = '/api/v1';
 const LEGACY_TOKEN_KEY = 'lasynet-access-token';
 const SESSION_HINT_KEY = 'lasynet-session-hint';
