@@ -28,8 +28,6 @@ def upgrade() -> None:
         sa.CheckConstraint("role IN ('admin', 'employee')", name="ck_users_role"),
         sa.UniqueConstraint("email", name="uq_users_email"),
     )
-    op.create_index("ix_users_email", "users", ["email"])
-
     op.create_table(
         "clients",
         sa.Column("id", sa.String(length=40), primary_key=True),
@@ -53,8 +51,8 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.CheckConstraint("computer_type IN ('Interne', 'Externe')", name="ck_computers_type"),
         sa.CheckConstraint("status IN ('Disponible', 'En cours', 'Maintenance')", name="ck_computers_status"),
-        sa.UniqueConstraint("mac_address", name="uq_computers_mac_address"),
     )
+    op.create_index("uq_computers_mac_address", "computers", ["mac_address"], unique=True)
     op.create_index("ix_computers_status", "computers", ["status"])
 
     op.create_table(
@@ -128,5 +126,4 @@ def downgrade() -> None:
     op.drop_index("ix_clients_email", table_name="clients")
     op.drop_index("ix_clients_name", table_name="clients")
     op.drop_table("clients")
-    op.drop_index("ix_users_email", table_name="users")
     op.drop_table("users")
