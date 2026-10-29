@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_db
+from app.api.v1.endpoints.auth import _login_failures
 from app.core.security import hash_password
 from app.db.base import Base
 from app.main import create_app
@@ -112,3 +113,24 @@ def test_logout_clears_session_cookie(client: TestClient) -> None:
 
     assert response.status_code == 204
     assert client.get("/api/v1/auth/me").status_code == 401
+
+
+
+def test_login_rate_limit_blocks_repeated_failures(client: TestClient) -> None:
+    _login_failures.clear()
+    for _ in range(10):
+        response = client.post(
+            "/api/v1/auth/login",
+            headers={"Origin": TRUSTED_ORIGIN},
+            json={"email": "missing@example.com", "password": "wrong-password"},
+        )
+        assert response.status_code == 401
+
+    limited = client.post(
+        "/api/v1/auth/login",
+        headers={"Origin": TRUSTED_ORIGIN},
+        json={"email": "missing@example.com", "password": "wrong-password"},
+    )
+    assert limited.status_code == 429
+    assert "retry-after" in limited.headers
+    _login_failures.clear()
