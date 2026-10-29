@@ -6,7 +6,7 @@ import { ModuleHeader } from './components/ModuleHeader';
 import { LandingPage } from './components/LandingPage';
 import { Sidebar } from './components/Sidebar';
 import { InvoiceModal } from './components/InvoiceModal';
-import { type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './data/mockStore';
+import { type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './types/domain';
 import {
   Activity, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, Pencil, Play
 } from 'lucide-react';
