@@ -76,8 +76,8 @@ def _b64encode(value: bytes) -> str:
     return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
 
 
-def _b64decode(value: str) -> str:
-    return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4)).decode("utf-8")
+def _b64decode(value: str) -> bytes:
+    return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
 
 
 def _b64encode_json(value: dict[str, Any]) -> str:
