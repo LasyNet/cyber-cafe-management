@@ -18,7 +18,7 @@ export function LandingPage({ screen, onNavigate, onSubmit, email, setEmail, pas
       <p>Connectez-vous avec les identifiants fournis par votre administrateur.</p>
       <form onSubmit={onSubmit} className="auth-form">
         <label>Adresse e-mail<input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="vous@exemple.com" autoComplete="email" required /></label>
-        <label>Mot de passe<input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Au moins 8 caractères" autoComplete="current-password" minLength={8} required /></label>
+        <label>Mot de passe<input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Votre mot de passe" autoComplete="current-password" required /></label>
         {notice && <div className="auth-notice" role="alert">{notice}</div>}
         <button className="landing-primary auth-submit" type="submit">Se connecter <ArrowRight size={17}/></button>
       </form>
