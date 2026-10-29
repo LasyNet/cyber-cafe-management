@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/cyber_cafe"
     cors_origins: str = "http://localhost:5173"
+    auth_secret_key: str = "local-development-secret-change-me"
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user, require_admin
 from app.db.session import get_db
 from app.models import AppSetting, CafeSession, Client, Computer, Payment
 from app.schemas.business import (
@@ -33,7 +34,7 @@ from app.schemas.business import (
     SettingsUpdate,
 )
 
-router = APIRouter(tags=["business"])
+router = APIRouter(tags=["business"], dependencies=[Depends(get_current_user)])
 
 
 def _commit(db: Session) -> None:
@@ -256,7 +257,11 @@ def get_settings(db: Session = Depends(get_db)):
 
 
 @router.patch("/settings", response_model=SettingsRead)
-def update_settings(payload: SettingsUpdate, db: Session = Depends(get_db)):
+def update_settings(
+    payload: SettingsUpdate,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
+):
     settings = db.get(AppSetting, 1)
     if settings is None:
         settings = AppSetting(
