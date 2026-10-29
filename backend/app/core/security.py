@@ -11,7 +11,10 @@ from typing import Any
 from fastapi import HTTPException, status
 
 PBKDF2_ITERATIONS = 310_000
+MIN_ACCEPTED_PBKDF2_ITERATIONS = 100_000
+MAX_ACCEPTED_PBKDF2_ITERATIONS = 1_000_000
 TOKEN_TTL_SECONDS = 60 * 60
+CLOCK_SKEW_SECONDS = 30
 
 
 def hash_password(password: str) -> str:
@@ -24,14 +27,21 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(password: str, encoded_hash: str) -> bool:
-    """Compare a password with a stored PBKDF2 hash without timing-sensitive equality."""
+    """Verify a stored PBKDF2 hash while rejecting unsafe or unsupported parameters."""
     try:
-        algorithm, iterations, salt, expected = encoded_hash.split("$", maxsplit=3)
+        algorithm, iterations_text, salt_text, expected = encoded_hash.split("$", maxsplit=3)
         if algorithm != "pbkdf2_sha256":
             return False
-        digest = hashlib.pbkdf2_hmac("sha256", password.encode(), _b64decode(salt), int(iterations))
-        return hmac.compare_digest(_b64encode(digest), expected)
-    except (ValueError, TypeError):
+        iterations = int(iterations_text)
+        if not MIN_ACCEPTED_PBKDF2_ITERATIONS <= iterations <= MAX_ACCEPTED_PBKDF2_ITERATIONS:
+            return False
+        salt = _b64decode(salt_text)
+        expected_bytes = _b64decode(expected)
+        if len(salt) != 16 or len(expected_bytes) != hashlib.sha256().digest_size:
+            return False
+        digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, iterations)
+        return hmac.compare_digest(digest, expected_bytes)
+    except (ValueError, TypeError, UnicodeError):
         return False
 
 
@@ -62,19 +72,28 @@ def decode_access_token(token: str, secret_key: str) -> dict[str, Any]:
         claims = json.loads(_b64decode(encoded_payload))
         if not isinstance(header, dict) or not isinstance(claims, dict):
             raise unauthorized
+
+        now = int(time.time())
+        issued_at = claims.get("iat")
+        expires_at = claims.get("exp")
         if (
             header.get("alg") != "HS256"
             or header.get("typ") != "JWT"
             or not isinstance(claims.get("sub"), str)
+            or not claims["sub"]
             or claims.get("role") not in {"admin", "employee"}
-            or not isinstance(claims.get("exp"), int)
-            or claims["exp"] <= int(time.time())
+            or type(issued_at) is not int
+            or type(expires_at) is not int
+            or issued_at > now + CLOCK_SKEW_SECONDS
+            or expires_at <= now
+            or expires_at <= issued_at
+            or expires_at - issued_at > TOKEN_TTL_SECONDS
         ):
             raise unauthorized
         return claims
     except HTTPException:
         raise
-    except (ValueError, TypeError, json.JSONDecodeError) as exc:
+    except (ValueError, TypeError, json.JSONDecodeError, UnicodeError) as exc:
         raise unauthorized from exc
 
 
