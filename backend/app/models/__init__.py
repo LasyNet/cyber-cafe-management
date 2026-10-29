@@ -33,7 +33,7 @@ class User(Base):
 
     id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("USR"))
     full_name: Mapped[str] = mapped_column(String(160), nullable=False)
-    email: Mapped[str] = mapped_column(String(254), nullable=False, unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(254), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="employee")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
