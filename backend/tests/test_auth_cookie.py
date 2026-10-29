@@ -115,7 +115,6 @@ def test_logout_clears_session_cookie(client: TestClient) -> None:
     assert client.get("/api/v1/auth/me").status_code == 401
 
 
-
 def test_login_rate_limit_blocks_repeated_failures(client: TestClient) -> None:
     _login_failures.clear()
     for _ in range(10):
