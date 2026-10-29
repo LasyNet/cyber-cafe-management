@@ -6,6 +6,7 @@ import './styles.css';
 // Remove the retired demo-auth flag left by older deployments. Authentication is now API-backed.
 try {
   window.localStorage.removeItem('lasynet-demo-auth');
+  window.localStorage.removeItem('lasynet-access-token');
 } catch {
   // Storage may be unavailable in restricted browser contexts; API auth remains authoritative.
 }
