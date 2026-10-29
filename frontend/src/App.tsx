@@ -1,19 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { money, dateTime, elapsed } from './utils/formatters';
-import { newId } from './utils/id';
-import { readStore, resetStore, writeStore } from './services/storeService';
+import { clearToken, currentUser, getToken, loadStore, login, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings } from './api/client';
 import { pageFromHash, pageSlugs, type Page } from './navigation';
 import { ModuleHeader } from './components/ModuleHeader';
 import { LandingPage } from './components/LandingPage';
 import { Sidebar } from './components/Sidebar';
 import { InvoiceModal } from './components/InvoiceModal';
-import { type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './data/mockStore';
+import { type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './types/domain';
 import {
-  Activity, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, RotateCcw, Pencil, Play
+  Activity, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, Pencil, Play
 } from 'lucide-react';
 
 function App() {
-  const [store, setStore] = useState<Store>(() => readStore());
+  const [store, setStore] = useState<Store>({ computers: [], clients: [], sessions: [], payments: [], settings: { cafeName: 'LasyNet', hourlyRate: 0, currency: 'Ar' } });
   const [activePage, setActivePage] = useState<Page>(() => pageFromHash());
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'Tous' | ComputerStatus>('Tous');
@@ -35,13 +34,36 @@ function App() {
   const [paymentFilter, setPaymentFilter] = useState<'Tous' | Payment['status']>('Tous');
   const [paymentMethods, setPaymentMethods] = useState<Record<string, Payment['method']>>({});
   const [selectedInvoice, setSelectedInvoice] = useState<Payment | null>(null);
-  const [screen, setScreen] = useState<'landing' | 'login' | 'signup' | 'app'>(() => sessionStorage.getItem('lasynet-demo-auth') === 'active' ? 'app' : 'landing');
+  const [screen, setScreen] = useState<'landing' | 'login' | 'signup' | 'app'>(() => getToken() ? 'app' : 'landing');
   const [authName, setAuthName] = useState('');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authNotice, setAuthNotice] = useState('');
 
-  useEffect(() => { if (!writeStore(store)) setToast('Stockage local indisponible : vérifie les paramètres du navigateur.'); }, [store]);
+  const refreshStore = async () => { const fresh = await loadStore(); setStore(fresh); };
+  useEffect(() => {
+    if (screen !== 'app') return;
+    let cancelled = false;
+    const unauthorized = () => { if (!cancelled) { setScreen('login'); setAuthNotice('Votre session a expiré. Connectez-vous à nouveau.'); } };
+    window.addEventListener('lasynet:unauthorized', unauthorized);
+    (async () => {
+      try {
+        const user = await currentUser();
+        if (!user.is_active) throw new Error('Ce compte est désactivé.');
+        if (cancelled) return;
+        setAuthName(user.full_name);
+        const fresh = await loadStore();
+        if (!cancelled) setStore(fresh);
+      } catch (error) {
+        if (!cancelled) {
+          clearToken();
+          setScreen('login');
+          setAuthNotice(error instanceof Error ? error.message : 'Impossible de charger votre session.');
+        }
+      }
+    })();
+    return () => { cancelled = true; window.removeEventListener('lasynet:unauthorized', unauthorized); };
+  }, [screen]);
   useEffect(() => {
     if (screen !== 'app') return;
     const slug = pageSlugs[activePage];
@@ -74,119 +96,108 @@ function App() {
     setFormComputer(store.computers.find(c => c.status === 'Disponible')?.id ?? '');
     setFormClient(store.clients[0]?.id ?? ''); setFormHours('1'); setModal(kind);
   };
-  const addComputer = () => {
+  const addComputer = async () => {
     if (!formName.trim()) return notify('Le nom de l’ordinateur est obligatoire.');
     const normalizedMac = formComputerType === 'Interne' ? formMacAddress.trim().toUpperCase().replace(/-/g, ':') : '';
     if (formComputerType === 'Interne' && !/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(normalizedMac)) return notify('Pour un poste interne, saisis une adresse MAC valide (ex. 00:1A:2B:3C:4D:5E).');
     if (formComputerType === 'Interne' && store.computers.some(c => c.id !== editingId && c.type === 'Interne' && c.macAddress && c.macAddress.toUpperCase() === normalizedMac)) return notify('Cette adresse MAC est déjà attribuée à un autre poste interne.');
-    if (editingId) {
-      setStore(s => ({ ...s, computers: s.computers.map(c => c.id === editingId ? { ...c, name: formName.trim(), type: formComputerType, macAddress: normalizedMac, status: formStatus } : c) }));
-      notify('Ordinateur modifié.');
-    } else {
-      const computer: Computer = { id: newId('PC'), name: formName.trim(), type: formComputerType, macAddress: normalizedMac, status: formStatus };
-      setStore(s => ({ ...s, computers: [...s.computers, computer] })); notify('Ordinateur ajouté.');
-    }
-    setModal(null);
+    try {
+      const data = { name: formName.trim(), type: formComputerType, macAddress: normalizedMac, status: formStatus };
+      if (editingId) await apiUpdateComputer(editingId, data); else await apiCreateComputer(data);
+      await refreshStore(); setModal(null); notify(editingId ? 'Ordinateur modifié.' : 'Ordinateur ajouté.');
+    } catch (error) { notify(error instanceof Error ? error.message : 'Échec de l’enregistrement.'); }
   };
   const editComputer = (computer: Computer) => {
     setEditingId(computer.id); setFormName(computer.name); setFormComputerType(computer.type ?? 'Interne'); setFormMacAddress(computer.macAddress ?? ''); setFormStatus(computer.status); setModal('computer');
   };
-  const deleteComputer = (computer: Computer) => {
+  const deleteComputer = async (computer: Computer) => {
     if (store.sessions.some(s => s.computerId === computer.id && s.status === 'En cours')) return notify('Termine la session avant de supprimer ce poste.');
-    if (window.confirm(`Supprimer ${computer.name} ?`)) {
-      setStore(s => ({ ...s, computers: s.computers.filter(c => c.id !== computer.id) })); notify('Ordinateur supprimé.');
-    }
+    if (!window.confirm('Supprimer ' + computer.name + ' ?')) return;
+    try { await apiDeleteComputer(computer.id); await refreshStore(); notify('Ordinateur supprimé.'); }
+    catch (error) { notify(error instanceof Error ? error.message : 'Suppression impossible.'); }
   };
-  const saveClient = () => {
+  const saveClient = async () => {
     if (!formName.trim()) return notify('Le nom du client est obligatoire.');
-    if (modal === 'session' && showInlineClientRegistration) {
-      const client: Client = { id: newId('CL'), name: formName.trim(), phone: formPhone.trim(), email: formEmail.trim(), createdAt: new Date().toISOString() };
-      setStore(s => ({ ...s, clients: [client, ...s.clients] }));
-      setFormClient(client.id); setFormName(''); setFormPhone(''); setFormEmail(''); setShowInlineClientRegistration(false);
-      notify(client.name + ' ajouté et sélectionné pour cette session.');
-      return;
-    }
-    if (editingId) {
-      setStore(s => ({ ...s, clients: s.clients.map(c => c.id === editingId ? { ...c, name: formName.trim(), phone: formPhone.trim(), email: formEmail.trim() } : c) }));
-      notify('Fiche client mise à jour.');
-    } else {
-      const client: Client = { id: newId('CL'), name: formName.trim(), phone: formPhone.trim(), email: formEmail.trim(), createdAt: new Date().toISOString() };
-      setStore(s => ({ ...s, clients: [client, ...s.clients] })); notify('Client ajouté.');
-    }
-    setModal(null);
+    try {
+      const payload = { name: formName.trim(), phone: formPhone.trim(), email: formEmail.trim() };
+      if (modal === 'session' && showInlineClientRegistration) {
+        const created = await apiCreateClient(payload);
+        await refreshStore(); setFormClient(created.id); setFormName(''); setFormPhone(''); setFormEmail(''); setShowInlineClientRegistration(false);
+        notify(created.name + ' ajouté et sélectionné pour cette session.'); return;
+      }
+      if (editingId) await apiUpdateClient(editingId, payload); else await apiCreateClient(payload);
+      await refreshStore(); setModal(null); notify(editingId ? 'Fiche client mise à jour.' : 'Client ajouté.');
+    } catch (error) { notify(error instanceof Error ? error.message : 'Échec de l’enregistrement du client.'); }
   };
   const editClient = (client: Client) => { setEditingId(client.id); setFormName(client.name); setFormPhone(client.phone); setFormEmail(client.email); setModal('client'); };
-  const deleteClient = (client: Client) => {
+  const deleteClient = async (client: Client) => {
     if (store.sessions.some(s => s.clientId === client.id && s.status === 'En cours')) return notify('Ce client possède une session active.');
-    if (window.confirm(`Supprimer le client ${client.name} ?`)) {
-      setStore(s => ({ ...s, clients: s.clients.filter(c => c.id !== client.id) })); notify('Client supprimé.');
-    }
+    if (!window.confirm('Supprimer le client ' + client.name + ' ?')) return;
+    try { await apiDeleteClient(client.id); await refreshStore(); notify('Client supprimé.'); }
+    catch (error) { notify(error instanceof Error ? error.message : 'Suppression impossible.'); }
   };
-  const startSession = () => {
+  const startSession = async () => {
     if (!formComputer || !formClient) return notify('Ajoute un client et un ordinateur disponible avant de démarrer.');
     const computer = getComputer(formComputer);
     if (!computer || computer.status !== 'Disponible') return notify('Cet ordinateur n’est plus disponible.');
     if (computer.type === 'Interne' && !computer.macAddress) return notify('Renseigne l’adresse MAC de ce poste interne avant de démarrer une session.');
-    const hours = formHours === 'libre' ? null : Number(formHours);
-    const session: Session = { id: newId('SES'), computerId: computer.id, clientId: formClient, startedAt: new Date().toISOString(), plannedHours: hours, status: 'En cours', amount: 0 };
-    setStore(s => ({ ...s, sessions: [session, ...s.sessions], computers: s.computers.map(c => c.id === computer.id ? { ...c, status: 'En cours' } : c) }));
-    setModal(null); setActivePage('Sessions'); notify('Session démarrée et enregistrée localement.');
+    try {
+      await apiCreateSession({ computerId: computer.id, clientId: formClient, plannedHours: formHours === 'libre' ? null : Number(formHours), amount: 0 });
+      await refreshStore(); setModal(null); setActivePage('Sessions'); notify('Session démarrée et enregistrée en base de données.');
+    } catch (error) { notify(error instanceof Error ? error.message : 'Impossible de démarrer la session.'); }
   };
-  const endSession = (session: Session) => {
+  const endSession = async (session: Session) => {
     const hours = Math.max(1, Math.ceil((Date.now() - new Date(session.startedAt).getTime()) / 3600000));
     const amount = hours * store.settings.hourlyRate;
     const ended = new Date().toISOString();
-    const payment: Payment = { id: newId('PAY'), sessionId: session.id, clientId: session.clientId, amount, method: 'Espèces', paidAt: ended, status: 'En attente' };
-    setStore(s => ({ ...s, sessions: s.sessions.map(item => item.id === session.id ? { ...item, status: 'Terminée', endedAt: ended, amount } : item), computers: s.computers.map(c => c.id === session.computerId ? { ...c, status: 'Disponible' } : c), payments: [payment, ...s.payments] }));
-    setActivePage('Paiements'); notify('Session terminée. Un paiement en attente a été créé.');
+    try {
+      await apiUpdateSession(session.id, { status: 'Terminée', ended_at: ended, amount });
+      await apiCreatePayment({ sessionId: session.id, clientId: session.clientId, amount, method: 'Espèces', paidAt: ended, status: 'En attente' });
+      await refreshStore(); setActivePage('Paiements'); notify('Session terminée. Le paiement en attente a été créé en base.');
+    } catch (error) { await refreshStore().catch(() => undefined); notify(error instanceof Error ? error.message : 'Impossible de terminer la session. Vérifie son état avant de réessayer.'); }
   };
-  const markPaid = (payment: Payment, method: Payment['method']) => {
-    setStore(s => ({ ...s, payments: s.payments.map(p => p.id === payment.id ? { ...p, status: 'Payé', method, paidAt: new Date().toISOString() } : p) }));
-    notify('Paiement enregistré.');
+  const markPaid = async (payment: Payment, method: Payment['method']) => {
+    try { await apiUpdatePayment(payment.id, { status: 'Payé', method, paidAt: new Date().toISOString() }); await refreshStore(); notify('Paiement enregistré en base de données.'); }
+    catch (error) { notify(error instanceof Error ? error.message : 'Échec de l’enregistrement du paiement.'); }
   };
-  const saveSettings = () => {
+  const saveSettings = async () => {
     const rate = Number(formRate);
     if (!formCafe.trim() || !Number.isFinite(rate) || rate <= 0) return notify('Renseigne un nom et un tarif horaire valide.');
-    setStore(s => ({ ...s, settings: { ...s.settings, cafeName: formCafe.trim(), hourlyRate: rate } as AppSettings }));
-    setModal(null); notify('Paramètres enregistrés.');
+    try {
+      await apiUpdateSettings({ ...store.settings, cafeName: formCafe.trim(), hourlyRate: rate });
+      await refreshStore(); setModal(null); notify('Paramètres enregistrés en base de données.');
+    } catch (error) { notify(error instanceof Error ? error.message : 'Échec de l’enregistrement des paramètres.'); }
   };
   const exportData = () => {
     const blob = new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'lasynet-donnees-locales.json'; link.click(); URL.revokeObjectURL(url);
-    notify('Export des données préparé.');
-  };
-  const restoreDemo = () => {
-    if (!window.confirm('Restaurer les données initiales ? Toutes les modifications locales seront perdues.')) return;
-    const fresh = resetStore(); setStore(fresh); notify('Données de démonstration restaurées.');
-  };
-
-  const enterDemo = () => {
-    sessionStorage.setItem('lasynet-demo-auth', 'active');
-    setScreen('app');
-    setAuthNotice('');
-    setActivePage('Vue d’ensemble');
+    const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'lasynet-export.json'; link.click(); URL.revokeObjectURL(url);
+    notify('Export des données du serveur préparé.');
   };
   const returnToLanding = () => {
-    sessionStorage.removeItem('lasynet-demo-auth');
+    clearToken();
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
     setScreen('landing');
     setAuthNotice('');
   };
-  const submitDemoAuth = (event: React.FormEvent<HTMLFormElement>) => {
+  const submitDemoAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!authEmail.trim() || !authPassword.trim() || (screen === 'signup' && !authName.trim())) {
-      setAuthNotice('Complète tous les champs pour continuer.');
-      return;
-    }
+    if (screen === 'signup') { setAuthNotice('La création de compte public est désactivée. Demandez à un administrateur de créer votre compte.'); return; }
+    if (!authEmail.trim() || !authPassword.trim()) { setAuthNotice('Saisis ton adresse e-mail et ton mot de passe.'); return; }
     setAuthNotice('');
-    enterDemo();
+    try {
+      await login(authEmail.trim(), authPassword);
+      setScreen('app');
+      setActivePage('Vue d’ensemble');
+    } catch (error) {
+      setAuthNotice(error instanceof Error ? error.message : 'Connexion impossible. Vérifie l’API et tes identifiants.');
+    }
   };
-  if (screen !== 'app') return <LandingPage screen={screen} onNavigate={setScreen} onSubmit={submitDemoAuth} onDemo={enterDemo} name={authName} setName={setAuthName} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} notice={authNotice} />;
+  if (screen !== 'app') return <LandingPage screen={screen} onNavigate={setScreen} onSubmit={submitDemoAuth} name={authName} setName={setAuthName} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} notice={authNotice} />;
 
   return <div className="app-shell">
     <Sidebar cafeName={store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} />
     <main className="main-content">
-      <header className="topbar"><div className="topbar-leading"><button className="landing-return-button" onClick={returnToLanding} title="Retour à la page d’accueil"><ArrowRight size={15} /> Accueil</button><div className="breadcrumb"><span>LasyNet</span><ChevronRight size={15} /><strong>{activePage}</strong></div></div><div className="topbar-actions"><label className="search-box"><Search size={17} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rechercher dans le module..." /><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label="État du stockage" onClick={() => notify('Stockage local actif sur ce navigateur.')}><Bell size={19} /><span className="notification-dot" /></button><div className="topbar-divider" /><button className="date-chip" onClick={exportData}><Download size={16} /> Exporter <ChevronDown size={14} /></button></div></header>
+      <header className="topbar"><div className="topbar-leading"><button className="landing-return-button" onClick={returnToLanding} title="Retour à la page d’accueil"><ArrowRight size={15} /> Accueil</button><div className="breadcrumb"><span>LasyNet</span><ChevronRight size={15} /><strong>{activePage}</strong></div></div><div className="topbar-actions"><label className="search-box"><Search size={17} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rechercher dans le module..." /><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label="État du stockage" onClick={() => notify('Données synchronisées avec le serveur.')}><Bell size={19} /><span className="notification-dot" /></button><div className="topbar-divider" /><button className="date-chip" onClick={exportData}><Download size={16} /> Exporter <ChevronDown size={14} /></button></div></header>
       <div className="page-content">
         {activePage === 'Vue d’ensemble' && <>
           <section className="welcome-row"><div><div className="eyebrow"><span className="live-dot" /> MODE DÉMONSTRATION · DONNÉES LOCALES</div><h1>Bonjour, Administrateur <span className="wave">✦</span></h1><p className="page-subtitle">Pilotez votre cybercafé depuis un tableau de bord interactif.</p></div><button className="primary-button" onClick={() => openModal('session')}><Plus size={18} /> Nouvelle session</button></section>
@@ -206,7 +217,7 @@ function App() {
         {activePage === 'Paiements' && <ModuleHeader title="Paiements" subtitle="Suivez les encaissements, filtrez les transactions et choisissez le mode de règlement." action="Exporter les données" onAction={exportData}><div className="stats-grid compact-stats"><article className="stat-card"><div className="stat-top"><span className="stat-label">Total encaissé</span><span className="stat-icon revenue"><CreditCard size={18}/></span></div><div className="stat-value">{money(totalPaid)}</div><div className="stat-footer">Somme des paiements confirmés</div></article><article className="stat-card"><div className="stat-top"><span className="stat-label">En attente</span><span className="stat-icon customers"><Clock3 size={18}/></span></div><div className="stat-value">{money(store.payments.filter(p=>p.status==='En attente').reduce((n,p)=>n+p.amount,0))}</div><div className="stat-footer">{store.payments.filter(p=>p.status==='En attente').length} règlement(s) à encaisser</div></article><article className="stat-card"><div className="stat-top"><span className="stat-label">Transactions</span><span className="stat-icon computers"><Activity size={18}/></span></div><div className="stat-value">{store.payments.length}</div><div className="stat-footer">{store.payments.filter(p=>p.status==='Payé').length} confirmé(s)</div></article></div><div className="payment-toolbar"><div className="filter-tabs" role="group" aria-label="Filtrer les paiements">{(['Tous','En attente','Payé'] as const).map(status=><button key={status} className={paymentFilter===status?'selected':''} onClick={()=>setPaymentFilter(status)}>{status}{status==='En attente'&&<span className="payment-tab-count">{store.payments.filter(p=>p.status==='En attente').length}</span>}</button>)}</div><span className="payment-results">{store.payments.filter(p=>(paymentFilter==='Tous'||p.status===paymentFilter)&&(p.id+p.sessionId+(getClient(p.clientId)?.name??'')+p.status+p.method).toLowerCase().includes(query.toLowerCase())).length} transaction(s)</span></div><div className="table-scroll"><table><thead><tr><th>RÉFÉRENCE</th><th>CLIENT</th><th>SESSION</th><th>MONTANT</th><th>MODE DE PAIEMENT</th><th>DATE</th><th>STATUT / ACTION</th></tr></thead><tbody>{store.payments.filter(p=>(paymentFilter==='Tous'||p.status===paymentFilter)&&(p.id+p.sessionId+(getClient(p.clientId)?.name??'')+p.status+p.method).toLowerCase().includes(query.toLowerCase())).map(p=><tr key={p.id}><td><strong>{p.id}</strong></td><td><div className="payment-client"><strong>{getClient(p.clientId)?.name??'Client supprimé'}</strong><small>{p.clientId}</small></div></td><td><span className="payment-session-ref">{p.sessionId}</span></td><td><strong className="payment-amount">{money(p.amount)}</strong></td><td>{p.status==='Payé'?<span className="payment-method"><CreditCard size={14}/>{p.method}</span>:<select className="payment-method-select" aria-label={'Mode de paiement pour '+p.id} value={paymentMethods[p.id]??p.method} onChange={e=>setPaymentMethods(current=>({...current,[p.id]:e.target.value as Payment['method']}))}><option value="Espèces">Espèces</option><option value="Mobile Money">Mobile Money</option><option value="Carte">Carte</option></select>}</td><td>{dateTime(p.paidAt)}</td><td><div className="row-actions payment-actions">{p.status==='Payé'?<span className="status-pill status-available"><i/>Payé</span>:<><span className="status-pill status-maintenance"><i/>En attente</span><button className="small-action" onClick={()=>markPaid(p,paymentMethods[p.id]??p.method)}>Encaisser</button></>}<button className="row-icon invoice-action" title="Consulter la facture" aria-label={'Consulter la facture '+p.id} onClick={()=>setSelectedInvoice(p)}><FileText size={15}/></button></div></td></tr>)}{store.payments.filter(p=>(paymentFilter==='Tous'||p.status===paymentFilter)&&(p.id+p.sessionId+(getClient(p.clientId)?.name??'')+p.status+p.method).toLowerCase().includes(query.toLowerCase())).length===0&&<tr><td colSpan={7} className="empty-state">{store.payments.length===0?'Aucun paiement enregistré pour le moment.':'Aucun paiement ne correspond à ce filtre.'}</td></tr>}</tbody></table></div><div className="table-footer"><span>Les paiements sont conservés dans le stockage local.</span><span><strong>{money(totalPaid)}</strong> encaissés au total</span></div></ModuleHeader>}
         {activePage === 'Facturation' && <ModuleHeader title="Facturation" subtitle="Retrouvez et imprimez les factures associées à tous les paiements, encaissés ou en attente." action="Exporter les données" onAction={exportData}><div className="stats-grid compact-stats"><article className="stat-card"><div className="stat-top"><span className="stat-label">Factures générées</span><span className="stat-icon computers"><FileText size={18}/></span></div><div className="stat-value">{store.payments.length}</div><div className="stat-footer">Une facture par paiement</div></article><article className="stat-card"><div className="stat-top"><span className="stat-label">Factures réglées</span><span className="stat-icon revenue"><Check size={18}/></span></div><div className="stat-value">{store.payments.filter(p=>p.status==='Payé').length}</div><div className="stat-footer">Paiements confirmés</div></article><article className="stat-card"><div className="stat-top"><span className="stat-label">À régler</span><span className="stat-icon customers"><Clock3 size={18}/></span></div><div className="stat-value">{money(store.payments.filter(p=>p.status==='En attente').reduce((n,p)=>n+p.amount,0))}</div><div className="stat-footer">{store.payments.filter(p=>p.status==='En attente').length} facture(s) en attente</div></article></div><div className="payment-toolbar"><span className="payment-results">{store.payments.filter(p=>(p.id+p.sessionId+(getClient(p.clientId)?.name??'')+p.status+p.method).toLowerCase().includes(query.toLowerCase())).length} facture(s)</span><span className="payment-results">Référence facture : FAC- suivi de la référence paiement</span></div><div className="table-scroll"><table><thead><tr><th>FACTURE</th><th>CLIENT</th><th>SESSION</th><th>MONTANT</th><th>MODE DE PAIEMENT</th><th>DATE</th><th>STATUT</th><th>ACTION</th></tr></thead><tbody>{store.payments.filter(p=>(p.id+p.sessionId+(getClient(p.clientId)?.name??'')+p.status+p.method).toLowerCase().includes(query.toLowerCase())).map(p=><tr key={p.id}><td><strong>FAC-{p.id}</strong></td><td><div className="payment-client"><strong>{getClient(p.clientId)?.name??'Client supprimé'}</strong><small>{p.clientId}</small></div></td><td><span className="payment-session-ref">{p.sessionId}</span></td><td><strong className="payment-amount">{money(p.amount)}</strong></td><td><span className="payment-method"><CreditCard size={14}/>{p.method}</span></td><td>{dateTime(p.paidAt)}</td><td><span className={`status-pill ${p.status==='Payé'?'status-available':'status-maintenance'}`}><i/>{p.status}</span></td><td><button className="small-action invoice-open" onClick={()=>setSelectedInvoice(p)}><FileText size={14}/> Voir / Imprimer</button></td></tr>)}{store.payments.filter(p=>(p.id+p.sessionId+(getClient(p.clientId)?.name??'')+p.status+p.method).toLowerCase().includes(query.toLowerCase())).length===0&&<tr><td colSpan={8} className="empty-state">Aucune facture ne correspond à la recherche.</td></tr>}</tbody></table></div><div className="table-footer"><span>Les factures sont générées à partir de tous les paiements enregistrés.</span><span><strong>{store.payments.length}</strong> facture(s)</span></div></ModuleHeader>}
         {activePage === 'Rapports' && <ModuleHeader title="Rapports" subtitle="Consultez les chiffres calculés à partir de vos données locales." action="Exporter le rapport" onAction={exportData}><div className="stats-grid"><article className="stat-card"><span className="stat-label">Chiffre encaissé</span><div className="stat-value">{money(totalPaid)}</div><div className="stat-footer">Paiements au statut « Payé »</div></article><article className="stat-card"><span className="stat-label">Sessions terminées</span><div className="stat-value">{store.sessions.filter(s=>s.status==='Terminée').length}</div></article><article className="stat-card"><span className="stat-label">Sessions actives</span><div className="stat-value">{activeSessions.length}</div></article><article className="stat-card"><span className="stat-label">Panier moyen encaissé</span><div className="stat-value">{money(store.payments.filter(p=>p.status==='Payé').length?Math.round(totalPaid/store.payments.filter(p=>p.status==='Payé').length):0)}</div></article></div><div className="panel module-placeholder"><div className="module-illustration"><Activity size={28}/></div><h2>Résumé de l’activité</h2><p>{store.computers.length} ordinateurs · {store.clients.length} clients · {store.sessions.length} sessions historiques · {store.payments.length} transactions. Les indicateurs sont recalculés à partir du stockage local.</p><button className="secondary-button" onClick={()=>setActivePage('Paiements')}><CreditCard size={16}/> Voir les paiements</button></div></ModuleHeader>}
-        {activePage === 'Paramètres' && <ModuleHeader title="Paramètres" subtitle="Personnalisez votre établissement et les règles de facturation." action="Modifier les paramètres" onAction={()=>openModal('settings')}><div className="settings-grid"><div className="panel settings-card"><div className="stat-icon revenue"><Settings2 size={20}/></div><h2>Établissement</h2><p>Nom affiché dans l’espace de travail.</p><strong>{store.settings.cafeName}</strong></div><div className="panel settings-card"><div className="stat-icon sessions"><CreditCard size={20}/></div><h2>Tarification</h2><p>Tarif appliqué par heure commencée.</p><strong>{money(store.settings.hourlyRate)} / heure</strong></div><div className="panel settings-card"><div className="stat-icon computers"><ShieldCheck size={20}/></div><h2>Stockage</h2><p>Les informations sont conservées sur cet appareil.</p><strong>localStorage · actif</strong><button className="secondary-button" onClick={exportData}><Download size={15}/> Exporter une sauvegarde</button></div><div className="panel settings-card"><div className="stat-icon customers"><RotateCcw size={20}/></div><h2>Données de démonstration</h2><p>Restaurer les exemples et annuler les changements.</p><button className="secondary-button" onClick={restoreDemo}><RotateCcw size={15}/> Réinitialiser les données</button></div></div></ModuleHeader>}
+        {activePage === 'Paramètres' && <ModuleHeader title="Paramètres" subtitle="Personnalisez votre établissement et les règles de facturation." action="Modifier les paramètres" onAction={()=>openModal('settings')}><div className="settings-grid"><div className="panel settings-card"><div className="stat-icon revenue"><Settings2 size={20}/></div><h2>Établissement</h2><p>Nom affiché dans l’espace de travail.</p><strong>{store.settings.cafeName}</strong></div><div className="panel settings-card"><div className="stat-icon sessions"><CreditCard size={20}/></div><h2>Tarification</h2><p>Tarif appliqué par heure commencée.</p><strong>{money(store.settings.hourlyRate)} / heure</strong></div><div className="panel settings-card"><div className="stat-icon computers"><ShieldCheck size={20}/></div><h2>Stockage sécurisé</h2><p>Les informations sont chargées depuis l’API et conservées dans la base de données.</p><strong>API · connectée</strong><button className="secondary-button" onClick={exportData}><Download size={15}/> Exporter une sauvegarde</button></div></div></ModuleHeader>}
         <footer className="page-footer"><span>© 2026 LasyNet</span><span><span className="tiny-dot green"/> Stockage local actif</span><span>Frontend · Démo interactive</span></footer>
       </div>
     </main>

@@ -1,0 +1,9 @@
+export type ComputerStatus = 'Disponible' | 'En cours' | 'Maintenance';
+export type ComputerType = 'Interne' | 'Externe';
+export type Computer = { id: string; name: string; type: ComputerType; macAddress: string; status: ComputerStatus };
+export type Client = { id: string; name: string; phone: string; email: string; createdAt: string };
+export type SessionStatus = 'En cours' | 'Terminée';
+export type Session = { id: string; computerId: string; clientId: string; startedAt: string; endedAt?: string; plannedHours: number | null; status: SessionStatus; amount: number };
+export type Payment = { id: string; sessionId: string; clientId: string; amount: number; method: 'Espèces' | 'Mobile Money' | 'Carte'; paidAt: string; status: 'Payé' | 'En attente' };
+export type AppSettings = { cafeName: string; hourlyRate: number; currency: string };
+export type Store = { computers: Computer[]; clients: Client[]; sessions: Session[]; payments: Payment[]; settings: AppSettings };

@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import type { Payment } from '../data/mockStore';
+import type { Payment } from '../types/domain';
 
 type InvoiceClient = { id: string; name: string; phone?: string; email?: string } | undefined;
 function buildInvoicePdf(payment: Payment, cafeName: string, client: InvoiceClient) {
