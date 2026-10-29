@@ -29,7 +29,9 @@ def verify_password(password: str, encoded_hash: str) -> bool:
         algorithm, iterations, salt, expected = encoded_hash.split("$", maxsplit=3)
         if algorithm != "pbkdf2_sha256":
             return False
-        digest = hashlib.pbkdf2_hmac("sha256", password.encode(), _b64decode(salt), int(iterations))
+        digest = hashlib.pbkdf2_hmac(
+            "sha256", password.encode(), _b64decode(salt), int(iterations)
+        )
         return hmac.compare_digest(_b64encode(digest), expected)
     except (ValueError, TypeError):
         return False
@@ -60,10 +62,16 @@ def decode_access_token(token: str, secret_key: str) -> dict[str, Any]:
             raise unauthorized
         header = json.loads(_b64decode(encoded_header))
         claims = json.loads(_b64decode(encoded_payload))
-        if (header.get("alg") != "HS256" or header.get("typ") != "JWT"
+        if not isinstance(header, dict) or not isinstance(claims, dict):
+            raise unauthorized
+        if (
+            header.get("alg") != "HS256"
+            or header.get("typ") != "JWT"
             or not isinstance(claims.get("sub"), str)
             or claims.get("role") not in {"admin", "employee"}
-            or not isinstance(claims.get("exp"), int) or claims["exp"] <= int(time.time())):
+            or not isinstance(claims.get("exp"), int)
+            or claims["exp"] <= int(time.time())
+        ):
             raise unauthorized
         return claims
     except HTTPException:
