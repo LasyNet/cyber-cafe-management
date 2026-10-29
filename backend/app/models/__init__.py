@@ -35,9 +35,7 @@ class User(Base):
         UniqueConstraint("email", name="uq_users_email"),
     )
 
-    id: Mapped[str] = mapped_column(
-        String(40), primary_key=True, default=lambda: new_id("USR")
-    )
+    id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("USR"))
     full_name: Mapped[str] = mapped_column(String(160), nullable=False)
     email: Mapped[str] = mapped_column(String(254), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -59,9 +57,7 @@ class Client(Base):
 
     __tablename__ = "clients"
 
-    id: Mapped[str] = mapped_column(
-        String(40), primary_key=True, default=lambda: new_id("CL")
-    )
+    id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("CL"))
     name: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
     phone: Mapped[str | None] = mapped_column(String(40))
     email: Mapped[str | None] = mapped_column(String(254), index=True)
@@ -95,13 +91,9 @@ class Computer(Base):
         Index("uq_computers_mac_address", "mac_address", unique=True),
     )
 
-    id: Mapped[str] = mapped_column(
-        String(40), primary_key=True, default=lambda: new_id("PC")
-    )
+    id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("PC"))
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-    computer_type: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="Interne"
-    )
+    computer_type: Mapped[str] = mapped_column(String(20), nullable=False, default="Interne")
     mac_address: Mapped[str | None] = mapped_column(String(17))
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default="Disponible", index=True
@@ -136,9 +128,7 @@ class CafeSession(Base):
         Index("ix_cafe_sessions_started_at", "started_at"),
     )
 
-    id: Mapped[str] = mapped_column(
-        String(40), primary_key=True, default=lambda: new_id("SES")
-    )
+    id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("SES"))
     computer_id: Mapped[str] = mapped_column(
         String(40),
         ForeignKey("computers.id", ondelete="RESTRICT"),
@@ -156,12 +146,8 @@ class CafeSession(Base):
     )
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     planned_hours: Mapped[Decimal | None] = mapped_column(Numeric(8, 2))
-    status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="En cours", index=True
-    )
-    amount: Mapped[Decimal] = mapped_column(
-        Numeric(12, 2), nullable=False, default=Decimal("0")
-    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="En cours", index=True)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=Decimal("0"))
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -195,9 +181,7 @@ class Payment(Base):
         Index("ix_payments_paid_at", "paid_at"),
     )
 
-    id: Mapped[str] = mapped_column(
-        String(40), primary_key=True, default=lambda: new_id("PAY")
-    )
+    id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("PAY"))
     session_id: Mapped[str] = mapped_column(
         String(40),
         ForeignKey("cafe_sessions.id", ondelete="RESTRICT"),
