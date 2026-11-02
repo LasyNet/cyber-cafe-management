@@ -72,12 +72,12 @@ const json = (method: string, body?: unknown): RequestInit => ({
   ...(body === undefined ? {} : { body: JSON.stringify(body) }),
 });
 
-export async function register(fullName: string, email: string, password: string, inviteCode: string): Promise<AuthUser> {
+export async function register(fullName: string, email: string, password: string, inviteToken: string): Promise<AuthUser> {
   return request<AuthUser>('/auth/register', json('POST', {
     full_name: fullName,
     email,
     password,
-    ...(inviteCode.trim() ? { invite_code: inviteCode.trim() } : {}),
+    ...(inviteToken.trim() ? { invite_token: inviteToken.trim() } : {}),
   }));
 }
 
