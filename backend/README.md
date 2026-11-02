@@ -103,14 +103,15 @@ Le script demande le nom, l'e-mail, le rôle et le mot de passe de manière inte
 **Avant la mise en production :** configurer une limite de tentatives sur `/auth/login` au niveau du proxy ou de la plateforme, activer HTTPS et vérifier que les migrations de la table `users` sont appliquées. Le frontend de démonstration actuel n'est pas encore connecté à ce flux d'authentification.
 
 
-## Initial account registration
+## Initial account registration and company invitations
 
 The public frontend registration endpoint is `POST /api/v1/auth/register` (frontend route `/register`).
-The first account created in an empty database automatically receives the `admin` role.
-Further public registrations are blocked unless `REGISTRATION_INVITE_CODE` is configured on the API;
-when a valid invitation code is supplied, the new account receives the `employee` role.
-Keep this value private and share it only with staff. Passwords must contain at least 12 characters
-and are stored as PBKDF2-HMAC-SHA256 hashes. Registration is restricted to configured trusted origins.
+The first account created in an empty database receives the initial administrator role and is attached
+to the migrated starter workspace. Further registrations require a company-specific invitation token.
+A company administrator creates invitations from **Personnel & permissions**; each link is single-use,
+can be restricted to an e-mail address, and expires after the selected validity period (1–30 days).
 
-To allow invited employee registrations on Render, add `REGISTRATION_INVITE_CODE` as a secret
-environment variable for the API service. Do not use a value that is easy to guess.
+A person who already has a LasyNet account can sign in through the invitation link to join the additional
+company without creating another account. Company membership roles and permission overrides are scoped
+to that company. Passwords must contain at least 12 characters and are stored as PBKDF2-HMAC-SHA256 hashes.
+Registration is restricted to configured trusted origins.
