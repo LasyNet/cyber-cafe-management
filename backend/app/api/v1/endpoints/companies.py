@@ -338,7 +338,7 @@ def create_invitation(
 @router.get(
     "/invitations",
     response_model=list[InvitationRead],
-    dependencies=[Depends(require_permission("personnel.manage"))],
+    dependencies=[Depends(require_company_admin)],
 )
 def list_invitations(
     company_id: Annotated[str, Depends(get_active_company_id)],
