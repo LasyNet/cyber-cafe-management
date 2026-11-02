@@ -8,7 +8,7 @@ import { Sidebar } from './components/Sidebar';
 import { InvoiceModal } from './components/InvoiceModal';
 import { type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './types/domain';
 import {
-  Activity, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, Pencil, Play
+  Activity, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, LoaderCircle, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, Pencil, Play
 } from 'lucide-react';
 
 function screenFromPath(): 'landing' | 'login' | 'register' | 'app' {
@@ -25,6 +25,7 @@ function App() {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'Tous' | ComputerStatus>('Tous');
   const [toast, setToast] = useState('');
+  const [loadingCount, setLoadingCount] = useState(0);
   const [modal, setModal] = useState<'computer' | 'client' | 'session' | 'settings' | null>(null);
   const [confirmation, setConfirmation] = useState<{
     title: string;
@@ -67,6 +68,14 @@ function App() {
     if (next === 'app') setActivePage('Vue d’ensemble');
   };
 
+  useEffect(() => {
+    const handleLoading = (event: Event) => {
+      const detail = (event as CustomEvent<{ count?: number }>).detail;
+      setLoadingCount(Math.max(0, detail?.count ?? 0));
+    };
+    window.addEventListener('lasynet:loading', handleLoading);
+    return () => window.removeEventListener('lasynet:loading', handleLoading);
+  }, []);
   const refreshStore = async () => { const fresh = await loadStore(); setStore(fresh); };
   useEffect(() => {
     if (screen !== 'app') return;
@@ -279,7 +288,11 @@ function App() {
       setAuthNotice(error instanceof Error ? error.message : 'Connexion impossible. Vérifie l’API et tes identifiants.');
     }
   };
-  if (screen !== 'app') return <LandingPage screen={screen} onNavigate={navigateScreen} onSubmit={submitAuth} onRegister={submitRegistration} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} fullName={registerName} setFullName={setRegisterName} inviteCode={registerInviteCode} setInviteCode={setRegisterInviteCode} notice={authNotice} />;
+  const loadingOverlay = loadingCount > 0 ? <div className="global-loading-backdrop" role="status" aria-live="polite" aria-label="Chargement en cours">
+    <div className="global-loading-card"><LoaderCircle className="global-loading-spinner" size={34} /><strong>Veuillez patienter</strong><span>Chargement et synchronisation des données…</span></div>
+  </div> : null;
+
+  if (screen !== 'app') return <><LandingPage screen={screen} onNavigate={navigateScreen} onSubmit={submitAuth} onRegister={submitRegistration} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} fullName={registerName} setFullName={setRegisterName} inviteCode={registerInviteCode} setInviteCode={setRegisterInviteCode} notice={authNotice} />{loadingOverlay}</>;;
 
   return <div className="app-shell">
     <Sidebar cafeName={store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} />
@@ -328,6 +341,7 @@ function App() {
         </div>
       </section>
     </div>}
+    {loadingOverlay}
     {toast&&<div className="toast"><Check size={17}/>{toast}<button aria-label="Fermer le message" onClick={()=>setToast('')}><X size={15}/></button></div>}
   </div>;
 }
