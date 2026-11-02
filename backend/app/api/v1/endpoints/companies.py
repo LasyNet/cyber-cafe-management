@@ -269,7 +269,8 @@ def update_member(
         if other_admins == 0:
             raise HTTPException(status_code=409, detail="L'entreprise doit conserver au moins un administrateur.")
     for key, value in data.items():
-        setattr(membership, key, value)
+        if value is not None:
+            setattr(membership, key, value)
     db.commit()
     db.refresh(membership)
     return {
@@ -364,7 +365,7 @@ def accept_invitation(
     db: Annotated[Session, Depends(get_db)],
 ):
     invitation = db.scalar(
-        select(Invitation).where(Invitation.token_hash == _invitation_hash(payload.invite_token))
+        select(Invitation).where(Invitation.token_hash == _invitation_hash(payload.invite_token)).with_for_update()
     )
     if invitation is None or invitation.revoked_at or invitation.accepted_at:
         raise HTTPException(status_code=404, detail="Invitation invalide ou déjà utilisée.")
