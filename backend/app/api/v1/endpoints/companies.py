@@ -129,7 +129,9 @@ def create_company(
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Impossible de créer cette entreprise.") from exc
+        raise HTTPException(
+            status_code=409, detail="Impossible de créer cette entreprise."
+        ) from exc
     db.refresh(company)
     return {
         "id": company.id,
@@ -198,7 +200,11 @@ def permission_catalog():
     }
 
 
-@router.get("/members", response_model=list[MemberRead], dependencies=[Depends(require_permission("personnel.manage"))])
+@router.get(
+    "/members",
+    response_model=list[MemberRead],
+    dependencies=[Depends(require_permission("personnel.manage"))],
+)
 def list_members(
     company_id: Annotated[str, Depends(get_active_company_id)],
     db: Annotated[Session, Depends(get_db)],
@@ -255,7 +261,10 @@ def update_member(
     )
     if losing_admin:
         if user_id == current_user.id:
-            raise HTTPException(status_code=409, detail="Vous ne pouvez pas retirer vos propres droits administrateur.")
+            raise HTTPException(
+                status_code=409,
+                detail="Vous ne pouvez pas retirer vos propres droits administrateur.",
+            )
         other_admins = db.scalar(
             select(func.count())
             .select_from(CompanyMember)
@@ -267,7 +276,10 @@ def update_member(
             )
         ) or 0
         if other_admins == 0:
-            raise HTTPException(status_code=409, detail="L'entreprise doit conserver au moins un administrateur.")
+            raise HTTPException(
+                status_code=409,
+                detail="L'entreprise doit conserver au moins un administrateur.",
+            )
     for key, value in data.items():
         if value is not None:
             setattr(membership, key, value)
@@ -296,7 +308,10 @@ def create_invitation(
     if email:
         invited_user = db.scalar(select(User).where(func.lower(User.email) == email))
         if invited_user and db.get(CompanyMember, (invited_user.id, company_id)):
-            raise HTTPException(status_code=409, detail="Cet utilisateur est déjà membre de l'entreprise.")
+            raise HTTPException(
+                status_code=409,
+                detail="Cet utilisateur est déjà membre de l'entreprise.",
+            )
     raw_token = secrets.token_urlsafe(32)
     invitation = Invitation(
         company_id=company_id,
@@ -321,7 +336,11 @@ def create_invitation(
     }
 
 
-@router.get("/invitations", response_model=list[InvitationRead], dependencies=[Depends(require_permission("personnel.manage"))])
+@router.get(
+    "/invitations",
+    response_model=list[InvitationRead],
+    dependencies=[Depends(require_permission("personnel.manage"))],
+)
 def list_invitations(
     company_id: Annotated[str, Depends(get_active_company_id)],
     db: Annotated[Session, Depends(get_db)],
@@ -365,14 +384,19 @@ def accept_invitation(
     db: Annotated[Session, Depends(get_db)],
 ):
     invitation = db.scalar(
-        select(Invitation).where(Invitation.token_hash == _invitation_hash(payload.invite_token)).with_for_update()
+        select(Invitation)
+        .where(Invitation.token_hash == _invitation_hash(payload.invite_token))
+        .with_for_update()
     )
     if invitation is None or invitation.revoked_at or invitation.accepted_at:
         raise HTTPException(status_code=404, detail="Invitation invalide ou déjà utilisée.")
     if _expired(invitation.expires_at):
         raise HTTPException(status_code=410, detail="Cette invitation a expiré.")
     if invitation.email and invitation.email.lower() != current_user.email.lower():
-        raise HTTPException(status_code=403, detail="Cette invitation est réservée à une autre adresse e-mail.")
+        raise HTTPException(
+            status_code=403,
+            detail="Cette invitation est réservée à une autre adresse e-mail.",
+        )
     if db.get(CompanyMember, (current_user.id, invitation.company_id)):
         raise HTTPException(status_code=409, detail="Vous êtes déjà membre de cette entreprise.")
     company = db.get(Company, invitation.company_id)
