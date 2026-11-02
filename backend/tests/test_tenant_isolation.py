@@ -106,6 +106,21 @@ def test_business_data_is_isolated_by_active_company() -> None:
                 headers={**headers, "X-Company-ID": "CMP-TENANT-A"},
             )
             assert foreign_resource.status_code == 404
+
+            employee_settings = client.patch(
+                "/api/v1/settings",
+                headers={**headers, "X-Company-ID": "CMP-TENANT-B"},
+                json={"cafe_name": "Unauthorized Change"},
+            )
+            assert employee_settings.status_code == 403
+
+            admin_settings = client.patch(
+                "/api/v1/settings",
+                headers={**headers, "X-Company-ID": "CMP-TENANT-A"},
+                json={"cafe_name": "Cyber A Updated"},
+            )
+            assert admin_settings.status_code == 200
+            assert admin_settings.json()["cafe_name"] == "Cyber A Updated"
     finally:
         app.dependency_overrides.clear()
         Base.metadata.drop_all(engine)
