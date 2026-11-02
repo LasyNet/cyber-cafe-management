@@ -281,7 +281,11 @@ def list_sessions(
     "/sessions",
     response_model=SessionRead,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("sessions.create"))],
+    dependencies=[
+        Depends(require_permission("sessions.create")),
+        Depends(require_permission("computers.read")),
+        Depends(require_permission("clients.read")),
+    ],
 )
 def create_session(
     payload: SessionCreate,
@@ -424,12 +428,16 @@ def get_settings(
     return _get_company_settings(db, company_id)
 
 
-@router.patch("/settings", response_model=SettingsRead)
+@router.patch(
+    "/settings",
+    response_model=SettingsRead,
+    dependencies=[Depends(require_permission("settings.update"))],
+)
 def update_settings(
     payload: SettingsUpdate,
     db: Session = Depends(get_db),
     company_id: str = Depends(get_active_company_id),
-    _admin=Depends(require_company_admin),
+    _user=Depends(get_current_user),
 ):
     settings = _get_company_settings(db, company_id)
     for key, value in payload.model_dump(exclude_unset=True).items():
