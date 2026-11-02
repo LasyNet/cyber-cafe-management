@@ -232,12 +232,12 @@ def test_later_registration_requires_invitation(client: TestClient) -> None:
     assert response.status_code == 403
 
 
-def test_invited_registration_creates_employee(
+def test_global_invite_code_cannot_bypass_company_invitation(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from app.core.config import get_settings
 
-    monkeypatch.setattr(get_settings(), "registration_invite_code", "team-invite-2026")
+    monkeypatch.setattr(get_settings(), "registration_invite_code", "legacy-shared-code")
     response = client.post(
         "/api/v1/auth/register",
         headers={"Origin": TRUSTED_ORIGIN},
@@ -245,12 +245,11 @@ def test_invited_registration_creates_employee(
             "full_name": "New Employee",
             "email": "employee@example.com",
             "password": "StrongRegistrationPassword123",
-            "invite_code": "team-invite-2026",
+            "invite_code": "legacy-shared-code",
         },
     )
 
-    assert response.status_code == 201
-    assert response.json()["role"] == "employee"
+    assert response.status_code == 403
 
 
 def test_registration_rejects_short_password(empty_client: TestClient) -> None:
