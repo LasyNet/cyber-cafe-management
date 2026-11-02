@@ -4,6 +4,15 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL?.trim() || (import.meta.env.
 const API_PREFIX = '/api/v1';
 const LEGACY_TOKEN_KEY = 'lasynet-access-token';
 const SESSION_HINT_KEY = 'lasynet-session-hint';
+const ACTIVE_COMPANY_KEY = 'lasynet-active-company';
+
+export type Company = { id: string; name: string; slug: string; is_active: boolean; role: 'admin' | 'employee'; created_at: string };
+export type CompanyMember = { user_id: string; full_name: string; email: string; role: 'admin' | 'employee'; permissions: Record<string, boolean>; is_active: boolean; created_at: string };
+export type CompanyInvitation = { id: string; email: string | null; role: 'admin' | 'employee'; expires_at: string; accepted_at: string | null; revoked_at: string | null; created_at: string; invite_token?: string };
+export type PermissionCatalog = { groups: Record<string, string[]>; all_permissions: string[]; default_employee_permissions: Record<string, boolean> };
+
+export const getActiveCompanyId = (): string | null => { try { return window.localStorage.getItem(ACTIVE_COMPANY_KEY); } catch { return null; } };
+export const setActiveCompanyId = (id: string | null) => { try { if (id) window.localStorage.setItem(ACTIVE_COMPANY_KEY, id); else window.localStorage.removeItem(ACTIVE_COMPANY_KEY); } catch { /* Selection is reloaded from the membership list when storage is unavailable. */ } };
 
 export type AuthUser = { id: string; full_name: string; email: string; role: string; is_active: boolean };
 type ApiComputer = { id: string; name: string; computer_type: Computer['type']; mac_address: string | null; status: Computer['status'] };
@@ -40,7 +49,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const response = await fetch(API_BASE + API_PREFIX + path, {
       ...init,
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...init.headers },
+      headers: { 'Content-Type': 'application/json', ...(init.headers as Record<string, string> | undefined), ...(getActiveCompanyId() ? { 'X-Company-ID': getActiveCompanyId() as string } : {}) },
     });
     if (response.status === 401) {
       clearToken();
@@ -123,3 +132,15 @@ export const updateSession = (id: string, patch: { status?: Session['status']; e
 export const createPayment = (payment: Pick<Payment, 'sessionId' | 'clientId' | 'amount' | 'method' | 'status' | 'paidAt'>) => request<ApiPayment>('/payments', json('POST', { session_id: payment.sessionId, client_id: payment.clientId, amount: payment.amount, method: payment.method, status: payment.status, paid_at: payment.paidAt }));
 export const updatePayment = (id: string, payment: Pick<Payment, 'status' | 'method' | 'paidAt'>) => request<ApiPayment>(`/payments/${encodeURIComponent(id)}`, json('PATCH', { status: payment.status, method: payment.method, paid_at: payment.paidAt }));
 export const updateSettings = (settings: AppSettings) => request<ApiSettings>('/settings', json('PATCH', { cafe_name: settings.cafeName, hourly_rate: settings.hourlyRate, currency: settings.currency }));
+
+
+export const listCompanies = () => request<Company[]>('/companies');
+export const createCompany = (name: string) => request<Company>('/companies', json('POST', { name }));
+export const updateCurrentCompany = (name: string) => request<Company>('/companies/current', json('PATCH', { name }));
+export const getPermissionCatalog = () => request<PermissionCatalog>('/companies/permissions');
+export const listCompanyMembers = () => request<CompanyMember[]>('/companies/members');
+export const updateCompanyMember = (userId: string, patch: Partial<Pick<CompanyMember, 'role' | 'permissions' | 'is_active'>>) => request<CompanyMember>(`/companies/members/${encodeURIComponent(userId)}`, json('PATCH', patch));
+export const listCompanyInvitations = () => request<CompanyInvitation[]>('/companies/invitations');
+export const createCompanyInvitation = (payload: { email?: string; role: 'admin' | 'employee'; expires_in_days: number }) => request<CompanyInvitation>('/companies/invitations', json('POST', payload));
+export const revokeCompanyInvitation = (id: string) => request<void>(`/companies/invitations/${encodeURIComponent(id)}`, json('DELETE'));
+export const acceptCompanyInvitation = (inviteToken: string) => request<{ company_id: string; company_name: string; role: string }>('/companies/invitations/accept', json('POST', { invite_token: inviteToken }));
