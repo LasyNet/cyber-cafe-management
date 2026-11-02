@@ -522,3 +522,78 @@ tr:hover td{background:#172338}
   .sidebar-logout { justify-content: center; padding: 0; }
   .sidebar-logout span { display: none; }
 }
+
+
+/* Multi-company workspace and staff administration */
+.workspace-select { position: relative; cursor: pointer; }
+.workspace-select .workspace-copy { min-width: 0; }
+.workspace-select .workspace-copy select {
+  width: 100%; min-width: 0; border: 0; outline: 0; background: transparent;
+  color: var(--muted); font: inherit; font-size: 11px; padding: 2px 16px 0 0;
+  appearance: none; cursor: pointer;
+}
+.workspace-select .workspace-copy select option { background: #0f172a; color: #f8fafc; }
+.tenant-page { display: grid; gap: 20px; }
+.tenant-page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.tenant-page-heading h1 { margin: 7px 0 5px; color: var(--text); font-size: 27px; letter-spacing: -.7px; }
+.tenant-page-heading p { margin: 0; color: var(--muted); font-size: 13px; }
+.tenant-count, .tenant-active, .tenant-disabled { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 999px; background: rgba(148,163,184,.12); color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.tenant-active { color: #86efac; background: rgba(34,197,94,.12); }
+.tenant-disabled { color: #fca5a5; background: rgba(239,68,68,.12); }
+.tenant-company-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 13px; }
+.tenant-company-card, .tenant-create-panel, .staff-invite-panel, .staff-member-card, .staff-invitations-panel, .tenant-empty, .tenant-loading { background: var(--panel); border: 1px solid var(--border); border-radius: 15px; padding: 18px; }
+.tenant-company-card { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.tenant-company-card.selected { border-color: rgba(220,38,38,.55); box-shadow: 0 0 0 1px rgba(220,38,38,.12); }
+.tenant-company-icon, .staff-member-avatar { width: 42px; height: 42px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 12px; color: #f87171; background: rgba(220,38,38,.12); }
+.tenant-company-copy, .staff-member-info { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.tenant-company-copy strong, .staff-member-info strong { color: var(--text); font-size: 13px; overflow-wrap: anywhere; }
+.tenant-company-copy span, .staff-member-info span { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.tenant-company-card .secondary-button { flex: 0 0 auto; white-space: nowrap; }
+.tenant-create-panel { display: grid; gap: 16px; }
+.tenant-create-panel h2, .staff-invitations-panel h2, .staff-panel-heading h2 { margin: 0 0 5px; color: var(--text); font-size: 15px; }
+.tenant-create-panel p, .staff-panel-heading p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.tenant-create-form { display: grid; grid-template-columns: minmax(220px,1fr) auto; align-items: end; gap: 12px; }
+.tenant-create-form .field-label, .staff-invite-form .field-label, .staff-role-row .field-label { margin: 0; }
+.tenant-empty { display: grid; justify-items: center; gap: 8px; color: var(--muted); padding: 30px; }
+.tenant-empty strong { color: var(--text); }
+.staff-invite-panel { display: grid; gap: 16px; }
+.staff-panel-heading { display: flex; align-items: center; gap: 12px; }
+.staff-invite-form { display: grid; grid-template-columns: minmax(180px,1.5fr) minmax(140px,.8fr) minmax(120px,.7fr) auto; align-items: end; gap: 12px; }
+.staff-invite-result { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px; border: 1px solid rgba(34,197,94,.25); background: rgba(34,197,94,.07); border-radius: 12px; }
+.staff-invite-result > div { display: grid; gap: 5px; min-width: 0; }
+.staff-invite-result strong { color: var(--text); font-size: 12px; }
+.staff-invite-result span { color: var(--muted); font-size: 11px; }
+.staff-invite-result code { color: #86efac; font-size: 11px; overflow-wrap: anywhere; white-space: normal; }
+.staff-members-list { display: grid; gap: 13px; }
+.staff-member-card { display: grid; gap: 16px; }
+.staff-member-top { display: flex; align-items: center; gap: 11px; }
+.staff-role-row { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+.staff-role-row .field-label { width: min(260px,100%); }
+.staff-member-actions { display: flex; gap: 8px; }
+.staff-permissions { border-top: 1px solid var(--border); padding-top: 14px; display: grid; gap: 12px; }
+.staff-permissions-heading { display: flex; align-items: center; gap: 7px; color: var(--text); font-size: 12px; font-weight: 700; }
+.staff-permission-groups { display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: 13px; }
+.staff-permission-group { display: grid; align-content: start; gap: 8px; }
+.staff-permission-group > strong { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+.staff-permission-group > div { display: grid; gap: 7px; }
+.staff-permission-group label { display: flex; align-items: flex-start; gap: 8px; color: var(--text); font-size: 11px; line-height: 1.4; cursor: pointer; }
+.staff-permission-group input { accent-color: #dc2626; margin: 1px 0 0; }
+.staff-invitations-panel { display: grid; gap: 12px; }
+.staff-invitation-row { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+.staff-invitation-row > div { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.staff-invitation-row strong { color: var(--text); font-size: 12px; overflow-wrap: anywhere; }
+.staff-invitation-row span { color: var(--muted); font-size: 11px; }
+.tenant-muted { margin: 0; color: var(--muted); font-size: 12px; }
+.tenant-loading { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+@media (max-width: 850px) {
+  .staff-invite-form { grid-template-columns: 1fr 1fr; }
+  .staff-invite-form .field-label:first-child { grid-column: 1 / -1; }
+  .tenant-create-form { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .tenant-page-heading, .staff-role-row, .staff-invite-result { align-items: stretch; flex-direction: column; }
+  .staff-invite-form { grid-template-columns: 1fr; }
+  .staff-invite-form .field-label:first-child { grid-column: auto; }
+  .staff-member-actions { flex-wrap: wrap; }
+  .staff-invitation-row { flex-wrap: wrap; }
+}
