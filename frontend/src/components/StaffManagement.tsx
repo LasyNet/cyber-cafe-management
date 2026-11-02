@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Check, Copy, LoaderCircle, MailPlus, Shield, UserCog, X } from 'lucide-react';
 import {
   createCompanyInvitation, listCompanyInvitations, listCompanyMembers,
@@ -6,7 +6,7 @@ import {
   type CompanyInvitation, type CompanyMember, type PermissionCatalog,
 } from '../api/client';
 
-type Props = { notify: (message: string) => void };
+type Props = { notify: (message: string) => void; requestConfirmation: (title: string, message: string, label: string, action: () => void | Promise<void>, variant?: 'primary' | 'danger') => void };
 const labels: Record<string, string> = {
   'computers.read': 'Consulter les ordinateurs', 'computers.create': 'Ajouter un ordinateur',
   'computers.update': 'Modifier un ordinateur', 'computers.delete': 'Supprimer un ordinateur',
@@ -23,7 +23,7 @@ const groupLabels: Record<string, string> = {
   payments: 'Paiements', settings: 'Paramètres', personnel: 'Personnel', companies: 'Entreprises',
 };
 
-export function StaffManagement({ notify }: Props) {
+export function StaffManagement({ notify, requestConfirmation }: Props) {
   const [members, setMembers] = useState<CompanyMember[]>([]);
   const [invitations, setInvitations] = useState<CompanyInvitation[]>([]);
   const [catalog, setCatalog] = useState<PermissionCatalog | null>(null);
@@ -63,62 +63,70 @@ export function StaffManagement({ notify }: Props) {
     return () => { mounted = false; };
   }, []);
 
-  const invite = async (event: React.FormEvent<HTMLFormElement>) => {
+  const invite = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setBusy('invite');
-    try {
-      const created = await createCompanyInvitation({ ...(email.trim() ? { email: email.trim() } : {}), role: inviteRole, expires_in_days: Number(expiry) });
-      setCreatedInvite(created);
-      setEmail('');
-      await refresh();
-      notify('Invitation créée. Copie le lien et transmets-le à la personne concernée.');
-    } catch (error) {
-      notify(error instanceof Error ? error.message : 'Création de l’invitation impossible.');
-    } finally {
-      setBusy(null);
-    }
+    requestConfirmation('Créer cette invitation ?', 'Un lien individuel sera généré pour rejoindre cette entreprise. Il sera à usage unique et expirera selon la durée choisie.', 'Créer l’invitation', async () => {
+      setBusy('invite');
+      try {
+        const created = await createCompanyInvitation({ ...(email.trim() ? { email: email.trim() } : {}), role: inviteRole, expires_in_days: Number(expiry) });
+        setCreatedInvite(created);
+        setEmail('');
+        await refresh();
+        notify('Invitation créée. Copie le lien et transmets-le à la personne concernée.');
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'Création de l’invitation impossible.');
+      } finally {
+        setBusy(null);
+      }
+    });
   };
 
   const saveMember = async (member: CompanyMember) => {
-    setBusy(member.user_id);
-    try {
-      await updateCompanyMember(member.user_id, {
-        role: roles[member.user_id] ?? member.role,
-        permissions: (roles[member.user_id] ?? member.role) === 'admin' ? {} : overrides[member.user_id] ?? {},
-      });
-      await refresh();
-      notify('Rôle et permissions mis à jour.');
-    } catch (error) {
-      notify(error instanceof Error ? error.message : 'Modification des droits impossible.');
-    } finally {
-      setBusy(null);
-    }
+    requestConfirmation('Enregistrer les droits de ce membre ?', 'Le rôle et les permissions personnalisées de ce membre seront modifiés.', 'Enregistrer les droits', async () => {
+      setBusy(member.user_id);
+      try {
+        await updateCompanyMember(member.user_id, {
+          role: roles[member.user_id] ?? member.role,
+          permissions: (roles[member.user_id] ?? member.role) === 'admin' ? {} : overrides[member.user_id] ?? {},
+        });
+        await refresh();
+        notify('Rôle et permissions mis à jour.');
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'Modification des droits impossible.');
+      } finally {
+        setBusy(null);
+      }
+    });
   };
 
   const toggleActive = async (member: CompanyMember) => {
-    setBusy(member.user_id);
-    try {
-      await updateCompanyMember(member.user_id, { is_active: !member.is_active });
-      await refresh();
-      notify(member.is_active ? 'Accès de ce membre désactivé.' : 'Accès de ce membre réactivé.');
-    } catch (error) {
-      notify(error instanceof Error ? error.message : 'Modification du membre impossible.');
-    } finally {
-      setBusy(null);
-    }
+    requestConfirmation(member.is_active ? 'Désactiver ce membre ?' : 'Réactiver ce membre ?', member.is_active ? 'Ce membre ne pourra plus accéder à cette entreprise.' : 'Ce membre retrouvera son accès à cette entreprise.', member.is_active ? 'Désactiver' : 'Réactiver', async () => {
+      setBusy(member.user_id);
+      try {
+        await updateCompanyMember(member.user_id, { is_active: !member.is_active });
+        await refresh();
+        notify(member.is_active ? 'Accès de ce membre désactivé.' : 'Accès de ce membre réactivé.');
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'Modification du membre impossible.');
+      } finally {
+        setBusy(null);
+      }
+    }, member.is_active ? 'danger' : 'primary');
   };
 
   const revoke = async (invitation: CompanyInvitation) => {
-    setBusy(invitation.id);
-    try {
-      await revokeCompanyInvitation(invitation.id);
-      await refresh();
-      notify('Invitation révoquée.');
-    } catch (error) {
-      notify(error instanceof Error ? error.message : 'Révocation impossible.');
-    } finally {
-      setBusy(null);
-    }
+    requestConfirmation('Révoquer cette invitation ?', 'Le lien ne pourra plus être utilisé pour rejoindre cette entreprise.', 'Révoquer', async () => {
+      setBusy(invitation.id);
+      try {
+        await revokeCompanyInvitation(invitation.id);
+        await refresh();
+        notify('Invitation révoquée.');
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'Révocation impossible.');
+      } finally {
+        setBusy(null);
+      }
+    }, 'danger');
   };
 
   const copyInvite = async () => {
