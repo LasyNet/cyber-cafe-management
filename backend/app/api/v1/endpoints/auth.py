@@ -16,7 +16,7 @@ from app.api.deps import AUTH_COOKIE_NAME, get_current_user
 from app.core.config import get_settings
 from app.core.security import TOKEN_TTL_SECONDS, create_access_token, hash_password, verify_password
 from app.db.session import get_db
-from app.models import User
+from app.models import Company, CompanyMember, User
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserRead
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -117,6 +117,33 @@ def register(
             is_active=True,
         )
         db.add(user)
+        db.flush()
+
+        # Transitional onboarding: new accounts join the migrated legacy
+        # workspace until company creation and per-company invitations ship.
+        company = db.scalar(
+            select(Company).where(Company.slug == "legacy-cyber-cafe")
+        )
+        if company is None:
+            company = Company(
+                name="Cyber Café Central",
+                slug="legacy-cyber-cafe",
+                created_by=user.id if role == "admin" else None,
+                is_active=True,
+            )
+            db.add(company)
+            db.flush()
+        elif role == "admin" and company.created_by is None:
+            company.created_by = user.id
+
+        db.add(
+            CompanyMember(
+                user_id=user.id,
+                company_id=company.id,
+                role=role,
+                is_active=True,
+            )
+        )
         db.commit()
         db.refresh(user)
         _clear_failed_logins(request)
