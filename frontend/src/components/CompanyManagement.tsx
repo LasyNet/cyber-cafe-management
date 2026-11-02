@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Building2, Check, Plus, RefreshCw } from 'lucide-react';
 import { createCompany, updateCurrentCompany, type Company } from '../api/client';
 
@@ -8,43 +8,48 @@ type Props = {
   onSelect: (id: string) => void;
   onRefresh: () => Promise<void>;
   notify: (message: string) => void;
+  requestConfirmation: (title: string, message: string, label: string, action: () => void | Promise<void>) => void;
 };
 
-export function CompanyManagement({ companies, activeCompanyId, onSelect, onRefresh, notify }: Props) {
+export function CompanyManagement({ companies, activeCompanyId, onSelect, onRefresh, notify, requestConfirmation }: Props) {
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const active = companies.find(company => company.id === activeCompanyId) ?? null;
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!name.trim()) return;
-    setSaving(true);
-    try {
-      const company = await createCompany(name.trim());
-      await onRefresh();
-      onSelect(company.id);
-      setName('');
-      notify('Entreprise créée et espace activé.');
-    } catch (error) {
-      notify(error instanceof Error ? error.message : 'Création de l’entreprise impossible.');
-    } finally {
-      setSaving(false);
-    }
+    requestConfirmation('Créer cette entreprise ?', 'Un nouvel espace isolé sera créé avec ses propres données et ses propres membres.', 'Créer l’entreprise', async () => {
+      setSaving(true);
+      try {
+        const company = await createCompany(name.trim());
+        await onRefresh();
+        onSelect(company.id);
+        setName('');
+        notify('Entreprise créée et espace activé.');
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'Création de l’entreprise impossible.');
+      } finally {
+        setSaving(false);
+      }
+    });
   };
 
   const rename = async () => {
     if (!active || !name.trim()) return;
-    setSaving(true);
-    try {
-      await updateCurrentCompany(name.trim());
-      await onRefresh();
-      setName('');
-      notify('Nom de l’entreprise mis à jour.');
-    } catch (error) {
-      notify(error instanceof Error ? error.message : 'Modification impossible.');
-    } finally {
-      setSaving(false);
-    }
+    requestConfirmation('Renommer cette entreprise ?', 'Le nom affiché dans l’espace de travail et les paramètres sera modifié.', 'Enregistrer le nom', async () => {
+      setSaving(true);
+      try {
+        await updateCurrentCompany(name.trim());
+        await onRefresh();
+        setName('');
+        notify('Nom de l’entreprise mis à jour.');
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'Modification impossible.');
+      } finally {
+        setSaving(false);
+      }
+    });
   };
 
   return <section className="tenant-page">
