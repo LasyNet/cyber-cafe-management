@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { money, dateTime, elapsed } from './utils/formatters';
-import { clearToken, currentUser, loadStore, login, logoutSession, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings, register, listCompanies, getActiveCompanyId, setActiveCompanyId, type Company, type CompanyAccess, getCompanyAccess } from './api/client';
+import { clearToken, currentUser, loadStore, login, logoutSession, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings, register, listCompanies, getActiveCompanyId, setActiveCompanyId, acceptCompanyInvitation, type Company, type CompanyAccess, getCompanyAccess } from './api/client';
 import { pageFromHash, pageSlugs, type Page } from './navigation';
 import { ModuleHeader } from './components/ModuleHeader';
 import { LandingPage } from './components/LandingPage';
@@ -338,6 +338,13 @@ function App() {
     setAuthNotice('');
     try {
       await login(authEmail.trim(), authPassword);
+      if (registerInviteCode.trim()) {
+        const joined = await acceptCompanyInvitation(registerInviteCode.trim());
+        setActiveCompanyId(joined.company_id);
+        setActiveCompanyIdState(joined.company_id);
+        setRegisterInviteCode('');
+        setAuthNotice('Invitation acceptée : tu as rejoint ' + joined.company_name + '.');
+      }
       navigateScreen('app');
     } catch (error) {
       setAuthNotice(error instanceof Error ? error.message : 'Connexion impossible. Vérifie l’API et tes identifiants.');
