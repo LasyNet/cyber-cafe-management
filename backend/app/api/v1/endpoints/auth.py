@@ -121,9 +121,7 @@ def register(
 
         # Transitional onboarding: new accounts join the migrated legacy
         # workspace until company creation and per-company invitations ship.
-        company = db.scalar(
-            select(Company).where(Company.slug == "legacy-cyber-cafe")
-        )
+        company = db.scalar(select(Company).where(Company.slug == "legacy-cyber-cafe"))
         if company is None:
             company = Company(
                 name="Cyber Café Central",
