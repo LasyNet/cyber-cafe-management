@@ -1,13 +1,14 @@
 """Schemas for tenant, membership and invitation management."""
 
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
-from typing import Annotated
 
 CompanyName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=160)]
-EmailAddress = Annotated[str, StringConstraints(strip_whitespace=True, min_length=5, max_length=254)]
+EmailAddress = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=5, max_length=254)
+]
 
 
 class CompanyCreate(BaseModel):
