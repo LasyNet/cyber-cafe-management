@@ -77,7 +77,6 @@ def register(
     """Create the first administrator; later accounts require a configured invite code."""
     _require_trusted_origin(request)
     _check_login_rate_limit(request)
-    settings = get_settings()
 
     # Serialize first-account decisions across concurrent PostgreSQL requests.
     if db.get_bind().dialect.name == "postgresql":
