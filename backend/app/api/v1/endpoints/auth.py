@@ -1,5 +1,6 @@
 """Authentication endpoints."""
 
+import hmac
 from collections import deque
 from math import ceil
 from threading import Lock
@@ -7,7 +8,8 @@ from time import monotonic
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import AUTH_COOKIE_NAME, get_current_user
@@ -15,7 +17,7 @@ from app.core.config import get_settings
 from app.core.security import TOKEN_TTL_SECONDS, create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models import User
-from app.schemas.auth import LoginRequest, TokenResponse, UserRead
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserRead
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 LOGIN_WINDOW_SECONDS = 15 * 60
@@ -63,6 +65,74 @@ def _require_trusted_origin(request: Request) -> None:
     origin = request.headers.get("origin")
     if not origin or origin not in get_settings().cors_origin_list:
         raise HTTPException(status_code=403, detail="Origine de requête non autorisée.")
+
+
+@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+def register(
+    payload: RegisterRequest,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+) -> User:
+    """Create the first administrator; later accounts require a configured invite code."""
+    _require_trusted_origin(request)
+    _check_login_rate_limit(request)
+    settings = get_settings()
+
+    # Serialize first-account decisions across concurrent PostgreSQL requests.
+    if db.get_bind().dialect.name == "postgresql":
+        db.execute(text("SELECT pg_advisory_xact_lock(731904221)"))
+
+    existing_count = db.scalar(select(func.count()).select_from(User)) or 0
+    if existing_count:
+        expected_code = settings.registration_invite_code
+        supplied_code = payload.invite_code or ""
+        if not expected_code or not hmac.compare_digest(supplied_code, expected_code):
+            _record_failed_login(request)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Les inscriptions sont réservées au personnel invité. "
+                    "Demande un code d’invitation à l’administrateur."
+                ),
+            )
+        role = "employee"
+    else:
+        role = "admin"
+
+    if db.scalar(select(User.id).where(func.lower(User.email) == payload.email)):
+        _record_failed_login(request)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Un compte avec cette adresse e-mail existe déjà.",
+        )
+
+    try:
+        user = User(
+            full_name=payload.full_name,
+            email=payload.email,
+            password_hash=hash_password(payload.password),
+            role=role,
+            is_active=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        _clear_failed_logins(request)
+        return user
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Un compte avec cette adresse e-mail existe déjà.",
+        ) from exc
+    except Exception:
+        db.rollback()
+        raise
 
 
 @router.post("/login", response_model=TokenResponse)
