@@ -450,3 +450,22 @@ tr:hover td{background:#172338}
 @keyframes loading-spin { to { transform:rotate(360deg); } }
 @keyframes loading-fade-in { from { opacity:0; } to { opacity:1; } }
 @media (prefers-reduced-motion:reduce) { .global-loading-spinner { animation-duration:2.5s; } .global-loading-backdrop { animation:none; } }
+
+
+/* Inline progress state for confirmation and form action buttons */
+.button-spinner {
+  flex: 0 0 auto;
+  animation: loading-spin .85s linear infinite;
+}
+.confirmation-actions button:disabled,
+.modal-actions button:disabled,
+.inline-save-client:disabled,
+.modal-header button:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
+}
+.confirmation-actions button:disabled {
+  box-shadow: none;
+}
