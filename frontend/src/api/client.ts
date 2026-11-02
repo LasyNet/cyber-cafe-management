@@ -106,13 +106,16 @@ export async function logoutSession(): Promise<void> {
 
 export const currentUser = () => request<AuthUser>('/auth/me');
 
-export async function loadStore(): Promise<Store> {
+export async function loadStore(access?: CompanyAccess): Promise<Store> {
+  const permissions = access?.permissions ?? {};
   const [computers, clients, sessions, payments, settings] = await Promise.all([
-    request<ApiComputer[]>('/computers'),
-    request<ApiClient[]>('/clients'),
-    request<ApiSession[]>('/sessions'),
-    request<ApiPayment[]>('/payments'),
-    request<ApiSettings>('/settings'),
+    permissions['computers.read'] === false ? Promise.resolve([] as ApiComputer[]) : request<ApiComputer[]>('/computers'),
+    permissions['clients.read'] === false ? Promise.resolve([] as ApiClient[]) : request<ApiClient[]>('/clients'),
+    permissions['sessions.read'] === false ? Promise.resolve([] as ApiSession[]) : request<ApiSession[]>('/sessions'),
+    permissions['payments.read'] === false ? Promise.resolve([] as ApiPayment[]) : request<ApiPayment[]>('/payments'),
+    permissions['settings.read'] === false
+      ? Promise.resolve({ id: 0, cafe_name: 'Espace entreprise', hourly_rate: 0, currency: 'Ar' } as ApiSettings)
+      : request<ApiSettings>('/settings'),
   ]);
   return {
     computers: computers.map(c => ({ id: c.id, name: c.name, type: c.computer_type, macAddress: c.mac_address ?? '', status: c.status })),
