@@ -1,10 +1,5 @@
 # ruff: noqa: B008
-"""Database-backed CRUD endpoints for the cyber-café domain.
-
-These endpoints intentionally centralize validation and transaction handling. Production
-deployment must put them behind the application's authentication/authorization layer before
-the frontend switches from demo mode to persisted data.
-"""
+"""Company-scoped CRUD endpoints for the cyber-café domain."""
 
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -14,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_admin
+from app.api.deps import get_active_company_id, get_current_user, require_admin
 from app.db.session import get_db
 from app.models import AppSetting, CafeSession, Client, Computer, Payment
 from app.schemas.business import (
@@ -48,21 +43,49 @@ def _commit(db: Session) -> None:
         ) from exc
 
 
-def _get_or_404(db: Session, model: type, resource_id: str):
-    instance = db.get(model, resource_id)
+def _get_or_404(db: Session, model: type, resource_id: str, company_id: str):
+    instance = db.scalar(
+        select(model).where(model.id == resource_id, model.company_id == company_id)
+    )
     if instance is None:
         raise HTTPException(status_code=404, detail="Ressource introuvable.")
     return instance
 
 
+def _get_company_settings(db: Session, company_id: str) -> AppSetting:
+    settings = db.scalar(select(AppSetting).where(AppSetting.company_id == company_id))
+    if settings is None:
+        settings = AppSetting(
+            company_id=company_id,
+            cafe_name="Cyber Café Central",
+            hourly_rate=Decimal("1200"),
+            currency="Ar",
+        )
+        db.add(settings)
+        _commit(db)
+        db.refresh(settings)
+    return settings
+
+
 @router.get("/clients", response_model=list[ClientRead])
-def list_clients(db: Session = Depends(get_db)):
-    return db.scalars(select(Client).order_by(Client.created_at.desc())).all()
+def list_clients(
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    return db.scalars(
+        select(Client)
+        .where(Client.company_id == company_id)
+        .order_by(Client.created_at.desc())
+    ).all()
 
 
 @router.post("/clients", response_model=ClientRead, status_code=status.HTTP_201_CREATED)
-def create_client(payload: ClientCreate, db: Session = Depends(get_db)):
-    client = Client(**payload.model_dump())
+def create_client(
+    payload: ClientCreate,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    client = Client(company_id=company_id, **payload.model_dump())
     db.add(client)
     _commit(db)
     db.refresh(client)
@@ -70,13 +93,22 @@ def create_client(payload: ClientCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/clients/{client_id}", response_model=ClientRead)
-def get_client(client_id: str, db: Session = Depends(get_db)):
-    return _get_or_404(db, Client, client_id)
+def get_client(
+    client_id: str,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    return _get_or_404(db, Client, client_id, company_id)
 
 
 @router.patch("/clients/{client_id}", response_model=ClientRead)
-def update_client(client_id: str, payload: ClientUpdate, db: Session = Depends(get_db)):
-    client = _get_or_404(db, Client, client_id)
+def update_client(
+    client_id: str,
+    payload: ClientUpdate,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    client = _get_or_404(db, Client, client_id, company_id)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(client, key, value)
     _commit(db)
@@ -85,20 +117,35 @@ def update_client(client_id: str, payload: ClientUpdate, db: Session = Depends(g
 
 
 @router.delete("/clients/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_client(client_id: str, db: Session = Depends(get_db)):
-    client = _get_or_404(db, Client, client_id)
+def delete_client(
+    client_id: str,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    client = _get_or_404(db, Client, client_id, company_id)
     db.delete(client)
     _commit(db)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/computers", response_model=list[ComputerRead])
-def list_computers(db: Session = Depends(get_db)):
-    return db.scalars(select(Computer).order_by(Computer.name)).all()
+def list_computers(
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    return db.scalars(
+        select(Computer)
+        .where(Computer.company_id == company_id)
+        .order_by(Computer.name)
+    ).all()
 
 
 @router.post("/computers", response_model=ComputerRead, status_code=status.HTTP_201_CREATED)
-def create_computer(payload: ComputerCreate, db: Session = Depends(get_db)):
+def create_computer(
+    payload: ComputerCreate,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
     data = payload.model_dump()
     if data["computer_type"] == "Interne" and not data["mac_address"]:
         raise HTTPException(
@@ -107,7 +154,7 @@ def create_computer(payload: ComputerCreate, db: Session = Depends(get_db)):
         )
     if data["computer_type"] == "Externe":
         data["mac_address"] = None
-    computer = Computer(**data)
+    computer = Computer(company_id=company_id, **data)
     db.add(computer)
     _commit(db)
     db.refresh(computer)
@@ -115,13 +162,22 @@ def create_computer(payload: ComputerCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/computers/{computer_id}", response_model=ComputerRead)
-def get_computer(computer_id: str, db: Session = Depends(get_db)):
-    return _get_or_404(db, Computer, computer_id)
+def get_computer(
+    computer_id: str,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    return _get_or_404(db, Computer, computer_id, company_id)
 
 
 @router.patch("/computers/{computer_id}", response_model=ComputerRead)
-def update_computer(computer_id: str, payload: ComputerUpdate, db: Session = Depends(get_db)):
-    computer = _get_or_404(db, Computer, computer_id)
+def update_computer(
+    computer_id: str,
+    payload: ComputerUpdate,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    computer = _get_or_404(db, Computer, computer_id, company_id)
     data = payload.model_dump(exclude_unset=True)
     new_type = data.get("computer_type", computer.computer_type)
     new_mac = data.get("mac_address", computer.mac_address)
@@ -140,11 +196,16 @@ def update_computer(computer_id: str, payload: ComputerUpdate, db: Session = Dep
 
 
 @router.delete("/computers/{computer_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_computer(computer_id: str, db: Session = Depends(get_db)):
-    computer = _get_or_404(db, Computer, computer_id)
+def delete_computer(
+    computer_id: str,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    computer = _get_or_404(db, Computer, computer_id, company_id)
     if db.scalar(
         select(CafeSession.id).where(
             CafeSession.computer_id == computer_id,
+            CafeSession.company_id == company_id,
             CafeSession.status == "En cours",
         )
     ):
@@ -158,17 +219,28 @@ def delete_computer(computer_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/sessions", response_model=list[SessionRead])
-def list_sessions(db: Session = Depends(get_db)):
-    return db.scalars(select(CafeSession).order_by(CafeSession.started_at.desc())).all()
+def list_sessions(
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    return db.scalars(
+        select(CafeSession)
+        .where(CafeSession.company_id == company_id)
+        .order_by(CafeSession.started_at.desc())
+    ).all()
 
 
 @router.post("/sessions", response_model=SessionRead, status_code=status.HTTP_201_CREATED)
-def create_session(payload: SessionCreate, db: Session = Depends(get_db)):
-    computer = _get_or_404(db, Computer, payload.computer_id)
-    _get_or_404(db, Client, payload.client_id)
+def create_session(
+    payload: SessionCreate,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    computer = _get_or_404(db, Computer, payload.computer_id, company_id)
+    _get_or_404(db, Client, payload.client_id, company_id)
     if computer.status != "Disponible":
         raise HTTPException(status_code=409, detail="Cet ordinateur n'est pas disponible.")
-    session = CafeSession(**payload.model_dump())
+    session = CafeSession(company_id=company_id, **payload.model_dump())
     computer.status = "En cours"
     db.add(session)
     _commit(db)
@@ -177,13 +249,22 @@ def create_session(payload: SessionCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/sessions/{session_id}", response_model=SessionRead)
-def get_session(session_id: str, db: Session = Depends(get_db)):
-    return _get_or_404(db, CafeSession, session_id)
+def get_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    return _get_or_404(db, CafeSession, session_id, company_id)
 
 
 @router.patch("/sessions/{session_id}", response_model=SessionRead)
-def update_session(session_id: str, payload: SessionUpdate, db: Session = Depends(get_db)):
-    session = _get_or_404(db, CafeSession, session_id)
+def update_session(
+    session_id: str,
+    payload: SessionUpdate,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    session = _get_or_404(db, CafeSession, session_id, company_id)
     data = payload.model_dump(exclude_unset=True)
     if data.get("status") == "Terminée" and not data.get("ended_at"):
         data["ended_at"] = datetime.now(UTC)
@@ -195,7 +276,7 @@ def update_session(session_id: str, payload: SessionUpdate, db: Session = Depend
     for key, value in data.items():
         setattr(session, key, value)
     if session.status == "Terminée":
-        computer = _get_or_404(db, Computer, session.computer_id)
+        computer = _get_or_404(db, Computer, session.computer_id, company_id)
         if computer.status == "En cours":
             computer.status = "Disponible"
     _commit(db)
@@ -204,14 +285,25 @@ def update_session(session_id: str, payload: SessionUpdate, db: Session = Depend
 
 
 @router.get("/payments", response_model=list[PaymentRead])
-def list_payments(db: Session = Depends(get_db)):
-    return db.scalars(select(Payment).order_by(Payment.created_at.desc())).all()
+def list_payments(
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    return db.scalars(
+        select(Payment)
+        .where(Payment.company_id == company_id)
+        .order_by(Payment.created_at.desc())
+    ).all()
 
 
 @router.post("/payments", response_model=PaymentRead, status_code=status.HTTP_201_CREATED)
-def create_payment(payload: PaymentCreate, db: Session = Depends(get_db)):
-    session = _get_or_404(db, CafeSession, payload.session_id)
-    _get_or_404(db, Client, payload.client_id)
+def create_payment(
+    payload: PaymentCreate,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    session = _get_or_404(db, CafeSession, payload.session_id, company_id)
+    _get_or_404(db, Client, payload.client_id, company_id)
     if session.client_id != payload.client_id:
         raise HTTPException(
             status_code=422,
@@ -220,7 +312,7 @@ def create_payment(payload: PaymentCreate, db: Session = Depends(get_db)):
     data = payload.model_dump()
     if data["status"] == "Payé" and data["paid_at"] is None:
         data["paid_at"] = datetime.now(UTC)
-    payment = Payment(**data)
+    payment = Payment(company_id=company_id, **data)
     db.add(payment)
     _commit(db)
     db.refresh(payment)
@@ -228,8 +320,13 @@ def create_payment(payload: PaymentCreate, db: Session = Depends(get_db)):
 
 
 @router.patch("/payments/{payment_id}", response_model=PaymentRead)
-def update_payment(payment_id: str, payload: PaymentUpdate, db: Session = Depends(get_db)):
-    payment = _get_or_404(db, Payment, payment_id)
+def update_payment(
+    payment_id: str,
+    payload: PaymentUpdate,
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    payment = _get_or_404(db, Payment, payment_id, company_id)
     data = payload.model_dump(exclude_unset=True)
     if data.get("status") == "Payé" and not data.get("paid_at"):
         data["paid_at"] = datetime.now(UTC)
@@ -241,36 +338,21 @@ def update_payment(payment_id: str, payload: PaymentUpdate, db: Session = Depend
 
 
 @router.get("/settings", response_model=SettingsRead)
-def get_settings(db: Session = Depends(get_db)):
-    settings = db.get(AppSetting, 1)
-    if settings is None:
-        settings = AppSetting(
-            id=1,
-            cafe_name="Cyber Café Central",
-            hourly_rate=Decimal("1200"),
-            currency="Ar",
-        )
-        db.add(settings)
-        _commit(db)
-        db.refresh(settings)
-    return settings
+def get_settings(
+    db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
+):
+    return _get_company_settings(db, company_id)
 
 
 @router.patch("/settings", response_model=SettingsRead)
 def update_settings(
     payload: SettingsUpdate,
     db: Session = Depends(get_db),
+    company_id: str = Depends(get_active_company_id),
     _admin=Depends(require_admin),
 ):
-    settings = db.get(AppSetting, 1)
-    if settings is None:
-        settings = AppSetting(
-            id=1,
-            cafe_name="Cyber Café Central",
-            hourly_rate=Decimal("1200"),
-            currency="Ar",
-        )
-        db.add(settings)
+    settings = _get_company_settings(db, company_id)
     for key, value in payload.model_dump(exclude_unset=True).items():
         if value is not None:
             setattr(settings, key, value)
