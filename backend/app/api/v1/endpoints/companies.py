@@ -15,7 +15,6 @@ from app.api.deps import (
     get_active_company_id,
     get_current_user,
     require_company_admin,
-    require_permission,
 )
 from app.core.permissions import ALL_PERMISSIONS, DEFAULT_EMPLOYEE_PERMISSIONS, PERMISSION_GROUPS
 from app.db.session import get_db
@@ -203,7 +202,7 @@ def permission_catalog():
 @router.get(
     "/members",
     response_model=list[MemberRead],
-    dependencies=[Depends(require_permission("personnel.manage"))],
+    dependencies=[Depends(require_company_admin)],
 )
 def list_members(
     company_id: Annotated[str, Depends(get_active_company_id)],
