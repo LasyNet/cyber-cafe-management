@@ -9,7 +9,9 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.security import decode_access_token
 from app.db.session import get_db
-from app.models import User
+from sqlalchemy import select
+
+from app.models import CompanyMember, User
 
 AUTH_COOKIE_NAME = "lasynet_session"
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -67,3 +69,44 @@ def require_admin(current_user: Annotated[User, Depends(get_current_user)]) -> U
             detail="Droits administrateur requis.",
         )
     return current_user
+
+
+def get_active_company_id(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> str:
+    """Resolve the selected company and verify the user's active membership."""
+    memberships = db.scalars(
+        select(CompanyMember)
+        .where(
+            CompanyMember.user_id == current_user.id,
+            CompanyMember.is_active.is_(True),
+        )
+        .order_by(CompanyMember.created_at, CompanyMember.company_id)
+    ).all()
+
+    requested_company_id = request.headers.get("x-company-id")
+    if requested_company_id:
+        membership = next(
+            (item for item in memberships if item.company_id == requested_company_id),
+            None,
+        )
+        if membership is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Vous ne faites pas partie de cette entreprise.",
+            )
+        return membership.company_id
+
+    if not memberships:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Aucune entreprise active n'est associée à ce compte.",
+        )
+    if len(memberships) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Sélectionnez une entreprise avant d'accéder à ses données.",
+        )
+    return memberships[0].company_id
