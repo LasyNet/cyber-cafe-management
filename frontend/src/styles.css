@@ -440,3 +440,13 @@ tr:hover td{background:#172338}
 .confirmation-dialog .danger-button:hover {
   background: #b91c1c;
 }
+
+/* Global loading feedback for API calls and initial page hydration */
+.global-loading-backdrop { position:fixed; inset:0; z-index:200; display:grid; place-items:center; padding:20px; background:rgba(2,6,23,.72); backdrop-filter:blur(5px); animation:loading-fade-in .14s ease-out; }
+.global-loading-card { display:flex; flex-direction:column; align-items:center; gap:12px; width:min(330px,100%); padding:28px 24px; border:1px solid #334155; border-radius:18px; background:#0f172a; color:#f8fafc; text-align:center; box-shadow:0 24px 80px rgba(0,0,0,.5); }
+.global-loading-card strong { font:700 15px 'Manrope',sans-serif; }
+.global-loading-card span { color:#94a3b8; font-size:11px; line-height:1.5; }
+.global-loading-spinner { color:#f87171; animation:loading-spin .85s linear infinite; }
+@keyframes loading-spin { to { transform:rotate(360deg); } }
+@keyframes loading-fade-in { from { opacity:0; } to { opacity:1; } }
+@media (prefers-reduced-motion:reduce) { .global-loading-spinner { animation-duration:2.5s; } .global-loading-backdrop { animation:none; } }
