@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.security import decode_access_token
 from app.db.session import get_db
-
 from app.models import Company, CompanyMember, User
 
 AUTH_COOKIE_NAME = "lasynet_session"
