@@ -170,7 +170,9 @@ def login(
         max_age=TOKEN_TTL_SECONDS,
         httponly=True,
         secure=settings.app_env.lower() == "production",
-        samesite="lax",
+        # Render frontend and API use separate origins; production cookies must
+        # be eligible for credentialed cross-origin fetch requests.
+        samesite="none" if settings.app_env.lower() == "production" else "lax",
         path=settings.api_v1_prefix,
     )
     return TokenResponse(expires_in=TOKEN_TTL_SECONDS)
