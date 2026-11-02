@@ -73,9 +73,7 @@ def list_clients(
     company_id: str = Depends(get_active_company_id),
 ):
     return db.scalars(
-        select(Client)
-        .where(Client.company_id == company_id)
-        .order_by(Client.created_at.desc())
+        select(Client).where(Client.company_id == company_id).order_by(Client.created_at.desc())
     ).all()
 
 
@@ -134,9 +132,7 @@ def list_computers(
     company_id: str = Depends(get_active_company_id),
 ):
     return db.scalars(
-        select(Computer)
-        .where(Computer.company_id == company_id)
-        .order_by(Computer.name)
+        select(Computer).where(Computer.company_id == company_id).order_by(Computer.name)
     ).all()
 
 
@@ -290,9 +286,7 @@ def list_payments(
     company_id: str = Depends(get_active_company_id),
 ):
     return db.scalars(
-        select(Payment)
-        .where(Payment.company_id == company_id)
-        .order_by(Payment.created_at.desc())
+        select(Payment).where(Payment.company_id == company_id).order_by(Payment.created_at.desc())
     ).all()
 
 
