@@ -54,7 +54,7 @@ class User(Base):
 
     company_memberships: Mapped[list["CompanyMember"]] = relationship(back_populates="user")
     created_companies: Mapped[list["Company"]] = relationship(
-        back_populates="created_by", foreign_keys="Company.created_by"
+        back_populates="created_by_user", foreign_keys="Company.created_by"
     )
 
 
