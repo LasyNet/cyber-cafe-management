@@ -188,7 +188,7 @@ def logout(request: Request, response: Response) -> Response:
         path=settings.api_v1_prefix,
         secure=settings.app_env.lower() == "production",
         httponly=True,
-        samesite="lax",
+        samesite="none" if settings.app_env.lower() == "production" else "lax",
     )
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
