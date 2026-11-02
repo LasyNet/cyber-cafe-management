@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { money, dateTime, elapsed } from './utils/formatters';
-import { clearToken, currentUser, loadStore, login, logoutSession, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings, register } from './api/client';
+import { clearToken, currentUser, loadStore, login, logoutSession, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings, register, listCompanies, getActiveCompanyId, setActiveCompanyId, type Company } from './api/client';
 import { pageFromHash, pageSlugs, type Page } from './navigation';
 import { ModuleHeader } from './components/ModuleHeader';
 import { LandingPage } from './components/LandingPage';
 import { Sidebar } from './components/Sidebar';
 import { InvoiceModal } from './components/InvoiceModal';
+import { CompanyManagement } from './components/CompanyManagement';
+import { StaffManagement } from './components/StaffManagement';
 import { type AppSettings, type Client, type Computer, type ComputerStatus, type ComputerType, type Payment, type Session, type Store } from './types/domain';
 import {
   Activity, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, LoaderCircle, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, Pencil, Play
@@ -22,6 +24,8 @@ function screenFromPath(): 'landing' | 'login' | 'register' | 'app' {
 function App() {
   const [store, setStore] = useState<Store>({ computers: [], clients: [], sessions: [], payments: [], settings: { cafeName: '', hourlyRate: 0, currency: 'Ar' } });
   const [activePage, setActivePage] = useState<Page>(() => pageFromHash());
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [activeCompanyIdState, setActiveCompanyIdState] = useState<string | null>(() => getActiveCompanyId());
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'Tous' | ComputerStatus>('Tous');
   const [toast, setToast] = useState('');
@@ -57,7 +61,7 @@ function App() {
   const [authPassword, setAuthPassword] = useState('');
   const [authNotice, setAuthNotice] = useState('');
   const [registerName, setRegisterName] = useState('');
-  const [registerInviteCode, setRegisterInviteCode] = useState('');
+  const [registerInviteCode, setRegisterInviteCode] = useState(() => new URLSearchParams(window.location.search).get('invite') ?? '');
 
   const navigateScreen = (next: 'landing' | 'login' | 'register' | 'app') => {
     const path = next === 'landing' ? '/' : next === 'login' ? '/login' : next === 'register' ? '/register' : '/app';
@@ -78,6 +82,21 @@ function App() {
     return () => window.removeEventListener('lasynet:loading', handleLoading);
   }, []);
   const refreshStore = async () => { const fresh = await loadStore(); setStore(fresh); };
+  const refreshCompanies = async () => { const memberships = await listCompanies(); setCompanies(memberships); };
+  const activeCompany = companies.find(company => company.id === activeCompanyIdState) ?? null;
+  const changeCompany = async (companyId: string) => {
+    if (!companyId || companyId === activeCompanyIdState) return;
+    setActiveCompanyId(companyId);
+    setActiveCompanyIdState(companyId);
+    setStore({ computers: [], clients: [], sessions: [], payments: [], settings: { cafeName: '', hourlyRate: 0, currency: 'Ar' } });
+    try {
+      await refreshStore();
+      setActivePage('Vue d’ensemble');
+      notify('Espace entreprise changé.');
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'Impossible de charger cette entreprise.');
+    }
+  };
   useEffect(() => {
     if (screen !== 'app') return;
     let cancelled = false;
@@ -89,6 +108,19 @@ function App() {
         if (!user.is_active) throw new Error('Ce compte est désactivé.');
         if (cancelled) return;
         setAuthName(user.full_name);
+        const memberships = await listCompanies();
+        if (cancelled) return;
+        setCompanies(memberships);
+        const savedCompanyId = getActiveCompanyId();
+        const selectedCompanyId = memberships.some(company => company.id === savedCompanyId)
+          ? savedCompanyId
+          : memberships[0]?.id ?? null;
+        setActiveCompanyId(selectedCompanyId);
+        setActiveCompanyIdState(selectedCompanyId);
+        if (!selectedCompanyId) {
+          setActivePage('Entreprises');
+          return;
+        }
         const fresh = await loadStore();
         if (!cancelled) setStore(fresh);
       } catch (error) {
@@ -302,7 +334,7 @@ function App() {
   if (screen !== 'app') return <><LandingPage screen={screen} onNavigate={navigateScreen} onSubmit={submitAuth} onRegister={submitRegistration} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} fullName={registerName} setFullName={setRegisterName} inviteCode={registerInviteCode} setInviteCode={setRegisterInviteCode} notice={authNotice} />{loadingOverlay}</>;;
 
   return <div className="app-shell">
-    <Sidebar cafeName={store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} onLogout={() => requestConfirmation('Se déconnecter ?', 'Voulez-vous vraiment quitter votre espace de gestion ?', 'Se déconnecter', logout, 'danger')} />
+    <Sidebar cafeName={activeCompany?.name || store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} onLogout={() => requestConfirmation('Se déconnecter ?', 'Voulez-vous vraiment quitter votre espace de gestion ?', 'Se déconnecter', logout, 'danger')} companies={companies} activeCompanyId={activeCompanyIdState} onCompanyChange={changeCompany} isCompanyAdmin={activeCompany?.role === 'admin'} />
     <main className="main-content">
       <header className="topbar"><div className="topbar-leading"><div className="breadcrumb"><span>LasyNet</span><ChevronRight size={15} /><strong>{activePage}</strong></div></div><div className="topbar-actions"><label className="search-box"><Search size={17} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rechercher dans le module..." /><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label="État du stockage" onClick={() => notify('Données synchronisées avec le serveur.')}><Bell size={19} /><span className="notification-dot" /></button><div className="topbar-divider" /><button className="date-chip" onClick={exportData}><Download size={16} /> Exporter <ChevronDown size={14} /></button></div></header>
       <div className="page-content">
@@ -325,6 +357,8 @@ function App() {
         {activePage === 'Facturation' && <ModuleHeader title="Facturation" subtitle="Retrouvez et imprimez les factures associées à tous les paiements, encaissés ou en attente." action="Exporter les données" onAction={exportData}><div className="stats-grid compact-stats"><article className="stat-card"><div className="stat-top"><span className="stat-label">Factures générées</span><span className="stat-icon computers"><FileText size={18}/></span></div><div className="stat-value">{store.payments.length}</div><div className="stat-footer">Une facture par paiement</div></article><article className="stat-card"><div className="stat-top"><span className="stat-label">Factures réglées</span><span className="stat-icon revenue"><Check size={18}/></span></div><div className="stat-value">{store.payments.filter(p=>p.status==='Payé').length}</div><div className="stat-footer">Paiements confirmés</div></article><article className="stat-card"><div className="stat-top"><span className="stat-label">À régler</span><span className="stat-icon customers"><Clock3 size={18}/></span></div><div className="stat-value">{money(store.payments.filter(p=>p.status==='En attente').reduce((n,p)=>n+p.amount,0))}</div><div className="stat-footer">{store.payments.filter(p=>p.status==='En attente').length} facture(s) en attente</div></article></div><div className="payment-toolbar"><span className="payment-results">{store.payments.filter(p=>(p.id+p.sessionId+(getClient(p.clientId)?.name??'')+p.status+p.method).toLowerCase().includes(query.toLowerCase())).length} facture(s)</span><span className="payment-results">Référence facture : FAC- suivi de la référence paiement</span></div><div className="table-scroll"><table><thead><tr><th>FACTURE</th><th>CLIENT</th><th>SESSION</th><th>MONTANT</th><th>MODE DE PAIEMENT</th><th>DATE</th><th>STATUT</th><th>ACTION</th></tr></thead><tbody>{store.payments.filter(p=>(p.id+p.sessionId+(getClient(p.clientId)?.name??'')+p.status+p.method).toLowerCase().includes(query.toLowerCase())).map(p=><tr key={p.id}><td><strong>FAC-{p.id}</strong></td><td><div className="payment-client"><strong>{getClient(p.clientId)?.name??'Client supprimé'}</strong><small>{p.clientId}</small></div></td><td><span className="payment-session-ref">{p.sessionId}</span></td><td><strong className="payment-amount">{money(p.amount)}</strong></td><td><span className="payment-method"><CreditCard size={14}/>{p.method}</span></td><td>{dateTime(p.paidAt)}</td><td><span className={`status-pill ${p.status==='Payé'?'status-available':'status-maintenance'}`}><i/>{p.status}</span></td><td><button className="small-action invoice-open" onClick={()=>setSelectedInvoice(p)}><FileText size={14}/> Voir / Imprimer</button></td></tr>)}{store.payments.filter(p=>(p.id+p.sessionId+(getClient(p.clientId)?.name??'')+p.status+p.method).toLowerCase().includes(query.toLowerCase())).length===0&&<tr><td colSpan={8} className="empty-state">Aucune facture ne correspond à la recherche.</td></tr>}</tbody></table></div><div className="table-footer"><span>Les factures sont générées à partir de tous les paiements enregistrés.</span><span><strong>{store.payments.length}</strong> facture(s)</span></div></ModuleHeader>}
         {activePage === 'Rapports' && <ModuleHeader title="Rapports" subtitle="Consultez les indicateurs calculés à partir des données du serveur." action="Exporter le rapport" onAction={exportData}><div className="stats-grid"><article className="stat-card"><span className="stat-label">Chiffre encaissé</span><div className="stat-value">{money(totalPaid)}</div><div className="stat-footer">Paiements au statut « Payé »</div></article><article className="stat-card"><span className="stat-label">Sessions terminées</span><div className="stat-value">{store.sessions.filter(s=>s.status==='Terminée').length}</div></article><article className="stat-card"><span className="stat-label">Sessions actives</span><div className="stat-value">{activeSessions.length}</div></article><article className="stat-card"><span className="stat-label">Panier moyen encaissé</span><div className="stat-value">{money(store.payments.filter(p=>p.status==='Payé').length?Math.round(totalPaid/store.payments.filter(p=>p.status==='Payé').length):0)}</div></article></div><div className="panel module-placeholder"><div className="module-illustration"><Activity size={28}/></div><h2>Résumé de l’activité</h2><p>{store.computers.length} ordinateurs · {store.clients.length} clients · {store.sessions.length} sessions historiques · {store.payments.length} transactions. Les indicateurs sont calculés à partir des données du serveur.</p><button className="secondary-button" onClick={()=>setActivePage('Paiements')}><CreditCard size={16}/> Voir les paiements</button></div></ModuleHeader>}
         {activePage === 'Paramètres' && <ModuleHeader title="Paramètres" subtitle="Personnalisez votre établissement et les règles de facturation." action="Modifier les paramètres" onAction={()=>openModal('settings')}><div className="settings-grid"><div className="panel settings-card"><div className="stat-icon revenue"><Settings2 size={20}/></div><h2>Établissement</h2><p>Nom affiché dans l’espace de travail.</p><strong>{store.settings.cafeName}</strong></div><div className="panel settings-card"><div className="stat-icon sessions"><CreditCard size={20}/></div><h2>Tarification</h2><p>Tarif appliqué par heure commencée.</p><strong>{money(store.settings.hourlyRate)} / heure</strong></div><div className="panel settings-card"><div className="stat-icon computers"><ShieldCheck size={20}/></div><h2>Stockage sécurisé</h2><p>Les informations sont chargées depuis l’API et conservées dans la base de données.</p><strong>API · connectée</strong><button className="secondary-button" onClick={exportData}><Download size={15}/> Exporter une sauvegarde</button></div></div></ModuleHeader>}
+        {activePage === 'Entreprises' && <CompanyManagement companies={companies} activeCompanyId={activeCompanyIdState} onSelect={changeCompany} onRefresh={refreshCompanies} notify={notify} />}
+        {activePage === 'Personnel' && activeCompany?.role === 'admin' && <StaffManagement key={activeCompanyIdState ?? 'none'} notify={notify} />}
         <footer className="page-footer"><span>© 2026 LasyNet</span><span><span className="tiny-dot green"/> Données serveur</span><span>Frontend · API connectée</span></footer>
       </div>
     </main>
