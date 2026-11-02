@@ -14,9 +14,11 @@ type SidebarProps = {
   onCompanyChange: (id: string) => void;
   isCompanyAdmin: boolean;
   permissions: Record<string, boolean>;
+  profileName: string;
+  profileRole: string;
 };
 
-export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate, onLogout, companies, activeCompanyId, onCompanyChange, isCompanyAdmin, permissions }: SidebarProps) {
+export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate, onLogout, companies, activeCompanyId, onCompanyChange, isCompanyAdmin, permissions, profileName, profileRole }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar-scroll">
@@ -66,9 +68,9 @@ export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate,
       </div>
       <div className="sidebar-bottom">
         <div className="profile">
-          <div className="avatar">AD</div>
+          <div className="avatar">{profileName.trim().split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase() ?? '').join('') || 'LN'}</div>
           <div className="profile-info">
-            <strong>Administrateur</strong>
+            <strong>{profileName || "Utilisateur"}</strong><span>{profileRole}</span>
           </div>
         </div>
         <button type="button" className="sidebar-logout" onClick={onLogout}>
