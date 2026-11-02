@@ -17,12 +17,10 @@ DEFAULT_EMPLOYEE_PERMISSIONS: Final[dict[str, bool]] = {
     "clients.update": True,
     "clients.delete": False,
     "payments.read": True,
-    "payments.create": False,
+    "payments.create": True,
     "payments.update": False,
     "settings.read": True,
     "settings.update": False,
-    "personnel.manage": False,
-    "companies.manage": False,
 }
 
 PERMISSION_GROUPS: Final[dict[str, tuple[str, ...]]] = {
@@ -31,8 +29,6 @@ PERMISSION_GROUPS: Final[dict[str, tuple[str, ...]]] = {
     "clients": ("read", "create", "update", "delete"),
     "payments": ("read", "create", "update"),
     "settings": ("read", "update"),
-    "personnel": ("manage",),
-    "companies": ("manage",),
 }
 
 ALL_PERMISSIONS: Final[tuple[str, ...]] = tuple(
