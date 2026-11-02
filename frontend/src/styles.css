@@ -315,3 +315,78 @@ tr:hover td{background:#172338}
 @media(prefers-color-scheme:light){:root{color-scheme:dark}}
 
 .auth-optional{font-weight:500;color:#94a3b8;font-size:10px}
+
+
+/* Centralized confirmation dialog */
+.confirmation-backdrop {
+  z-index: 120;
+  backdrop-filter: blur(5px);
+}
+.confirmation-dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 28px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 20px;
+  background: var(--surface, #fff);
+  color: var(--text, #111827);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, .24);
+  text-align: center;
+  animation: confirmation-enter .18s ease-out;
+}
+.confirmation-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  border-radius: 16px;
+  background: rgba(59, 130, 246, .10);
+  color: #2563eb;
+}
+.confirmation-icon.danger {
+  background: rgba(220, 38, 38, .10);
+  color: #dc2626;
+}
+.confirmation-dialog h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -.025em;
+}
+.confirmation-dialog p {
+  margin: 10px 0 22px;
+  color: var(--muted, #64748b);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.confirmation-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 11px;
+  background: #dc2626;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, transform .15s ease;
+}
+.danger-button:hover { background: #b91c1c; transform: translateY(-1px); }
+@keyframes confirmation-enter {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (max-width: 480px) {
+  .confirmation-dialog { padding: 23px 19px; }
+  .confirmation-actions { flex-direction: column-reverse; }
+  .confirmation-actions button { width: 100%; }
+}
