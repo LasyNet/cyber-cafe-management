@@ -1,7 +1,6 @@
 """Authentication endpoints."""
 
 import hashlib
-import hmac
 from collections import deque
 from datetime import UTC, datetime
 from math import ceil
@@ -107,20 +106,14 @@ def register(
             )
         role = invitation.role
     elif existing_count:
-        expected_code = settings.registration_invite_code
-        supplied_code = payload.invite_code or ""
-        if not expected_code or not hmac.compare_digest(
-            supplied_code.encode(), expected_code.encode()
-        ):
-            _record_failed_login(request)
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    "Les inscriptions sont réservées au personnel invité. "
-                    "Utilise le lien d’invitation fourni par l’administrateur."
-                ),
-            )
-        role = "employee"
+        _record_failed_login(request)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Les inscriptions sont réservées au personnel invité. "
+                "Utilise le lien d’invitation de ton entreprise."
+            ),
+        )
     else:
         role = "admin"
 
