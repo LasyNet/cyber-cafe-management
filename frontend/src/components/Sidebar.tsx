@@ -1,4 +1,5 @@
 import { ChevronDown, LogOut, Wifi } from 'lucide-react';
+import type { Company } from '../api/client';
 import { nav, type Page } from '../navigation';
 
 type SidebarProps = {
@@ -8,9 +9,12 @@ type SidebarProps = {
   onNavigate: (page: Page) => void;
   onNotify: (message: string) => void;
   onLogout: () => void;
+  companies: Company[];
+  activeCompanyId: string | null;
+  onCompanyChange: (id: string) => void;
 };
 
-export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate, onLogout }: SidebarProps) {
+export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate, onLogout, companies, activeCompanyId, onCompanyChange }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar-scroll">
@@ -21,14 +25,16 @@ export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate,
             <span className="brand-caption">GESTION CYBERCAFÉ</span>
           </div>
         </div>
-        <div className="workspace">
+        <label className="workspace workspace-select">
           <div className="workspace-icon"><Wifi size={17} /></div>
           <div className="workspace-copy">
             <strong>{cafeName}</strong>
-            <span>Connecté · Données serveur</span>
+            <select aria-label="Entreprise active" value={activeCompanyId ?? ''} onChange={event => onCompanyChange(event.target.value)}>
+              {companies.map(company => <option key={company.id} value={company.id}>{company.name}</option>)}
+            </select>
           </div>
           <ChevronDown size={15} className="muted-icon" />
-        </div>
+        </label>
         <div className="nav-label">MENU PRINCIPAL</div>
         <nav className="navigation">
           {nav.slice(0, 5).map(({ label, icon: Icon }) => (
