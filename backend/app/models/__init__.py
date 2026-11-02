@@ -119,6 +119,7 @@ class Invitation(Base):
     __tablename__ = "invitations"
     __table_args__ = (
         CheckConstraint("role IN ('admin', 'employee')", name="ck_invitations_role"),
+        UniqueConstraint("token_hash", name="uq_invitations_token_hash"),
         Index("ix_invitations_company_id", "company_id"),
         Index("ix_invitations_expires_at", "expires_at"),
     )
@@ -128,7 +129,7 @@ class Invitation(Base):
         String(40), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
     )
     email: Mapped[str | None] = mapped_column(String(254))
-    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="employee")
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
