@@ -319,6 +319,7 @@ def get_session(
     dependencies=[
         Depends(require_permission("sessions.update")),
         Depends(require_permission("payments.create")),
+        Depends(require_permission("settings.read")),
     ],
 )
 def update_session(
