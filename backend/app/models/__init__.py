@@ -94,7 +94,6 @@ class CompanyMember(Base):
     __tablename__ = "company_members"
     __table_args__ = (
         CheckConstraint("role IN ('admin', 'employee')", name="ck_company_members_role"),
-        UniqueConstraint("user_id", "company_id", name="uq_company_members_user_company"),
         Index("ix_company_members_company_id", "company_id"),
     )
 
