@@ -27,25 +27,35 @@ export const clearToken = () => {
   }
 };
 
+let pendingRequests = 0;
+
+function notifyLoading() {
+  window.dispatchEvent(new CustomEvent('lasynet:loading', { detail: { count: pendingRequests } }));
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...init.headers,
-    },
-  });
-  if (response.status === 401) {
-    clearToken();
-    window.dispatchEvent(new Event('lasynet:unauthorized'));
+  pendingRequests += 1;
+  notifyLoading();
+  try {
+    const response = await fetch(API_BASE + API_PREFIX + path, {
+      ...init,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...init.headers },
+    });
+    if (response.status === 401) {
+      clearToken();
+      window.dispatchEvent(new Event('lasynet:unauthorized'));
+    }
+    if (!response.ok) {
+      const body = await response.json().catch(() => null) as { detail?: string } | null;
+      throw new Error(body?.detail || 'Erreur API (' + response.status + ')');
+    }
+    if (response.status === 204) return undefined as T;
+    return response.json() as Promise<T>;
+  } finally {
+    pendingRequests = Math.max(0, pendingRequests - 1);
+    notifyLoading();
   }
-  if (!response.ok) {
-    const body = await response.json().catch(() => null) as { detail?: string } | null;
-    throw new Error(body?.detail || `Erreur API (${response.status})`);
-  }
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
 }
 
 const json = (method: string, body?: unknown): RequestInit => ({
