@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { money, dateTime, elapsed } from './utils/formatters';
-import { clearToken, currentUser, loadStore, login, logoutSession, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings, register, listCompanies, getActiveCompanyId, setActiveCompanyId, type Company } from './api/client';
+import { clearToken, currentUser, loadStore, login, logoutSession, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings, register, listCompanies, getActiveCompanyId, setActiveCompanyId, type Company, type CompanyAccess, getCompanyAccess } from './api/client';
 import { pageFromHash, pageSlugs, type Page } from './navigation';
 import { ModuleHeader } from './components/ModuleHeader';
 import { LandingPage } from './components/LandingPage';
@@ -26,6 +26,7 @@ function App() {
   const [activePage, setActivePage] = useState<Page>(() => pageFromHash());
   const [companies, setCompanies] = useState<Company[]>([]);
   const [activeCompanyIdState, setActiveCompanyIdState] = useState<string | null>(() => getActiveCompanyId());
+  const [companyAccess, setCompanyAccess] = useState<CompanyAccess | null>(null);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'Tous' | ComputerStatus>('Tous');
   const [toast, setToast] = useState('');
@@ -84,12 +85,15 @@ function App() {
   const refreshStore = async () => { const fresh = await loadStore(); setStore(fresh); };
   const refreshCompanies = async () => { const memberships = await listCompanies(); setCompanies(memberships); };
   const activeCompany = companies.find(company => company.id === activeCompanyIdState) ?? null;
+  const can = (permission: string) => activeCompany?.role === 'admin' || companyAccess?.permissions[permission] === true;
   const changeCompany = async (companyId: string) => {
     if (!companyId || companyId === activeCompanyIdState) return;
     setActiveCompanyId(companyId);
     setActiveCompanyIdState(companyId);
     setStore({ computers: [], clients: [], sessions: [], payments: [], settings: { cafeName: '', hourlyRate: 0, currency: 'Ar' } });
     try {
+      const access = await getCompanyAccess();
+      setCompanyAccess(access);
       await refreshStore();
       setActivePage('Vue d’ensemble');
       notify('Espace entreprise changé.');
@@ -121,6 +125,8 @@ function App() {
           setActivePage('Entreprises');
           return;
         }
+        const access = await getCompanyAccess();
+        if (!cancelled) setCompanyAccess(access);
         const fresh = await loadStore();
         if (!cancelled) setStore(fresh);
       } catch (error) {
@@ -134,7 +140,17 @@ function App() {
     return () => { cancelled = true; window.removeEventListener('lasynet:unauthorized', unauthorized); };
   }, [screen]);
   useEffect(() => {
-    if (screen !== 'app') return;
+    if (screen !== 'app' || !activeCompany) return;
+    const pagePermission: Partial<Record<Page, string>> = {
+      Ordinateurs: 'computers.read', Sessions: 'sessions.read', Clients: 'clients.read',
+      Paiements: 'payments.read', Facturation: 'payments.read', Rapports: 'payments.read',
+      Paramètres: 'settings.read', Personnel: 'personnel.manage',
+    };
+    const required = pagePermission[activePage];
+    if (required && !can(required)) {
+      setActivePage('Vue d’ensemble');
+      return;
+    }
     const slug = pageSlugs[activePage];
     if (window.location.hash.slice(1) !== slug) window.history.pushState(null, '', `#${slug}`);
   }, [activePage, screen]);
@@ -334,7 +350,7 @@ function App() {
   if (screen !== 'app') return <><LandingPage screen={screen} onNavigate={navigateScreen} onSubmit={submitAuth} onRegister={submitRegistration} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} fullName={registerName} setFullName={setRegisterName} inviteCode={registerInviteCode} setInviteCode={setRegisterInviteCode} notice={authNotice} />{loadingOverlay}</>;;
 
   return <div className="app-shell">
-    <Sidebar cafeName={activeCompany?.name || store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} onLogout={() => requestConfirmation('Se déconnecter ?', 'Voulez-vous vraiment quitter votre espace de gestion ?', 'Se déconnecter', logout, 'danger')} companies={companies} activeCompanyId={activeCompanyIdState} onCompanyChange={changeCompany} isCompanyAdmin={activeCompany?.role === 'admin'} />
+    <Sidebar cafeName={activeCompany?.name || store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} onLogout={() => requestConfirmation('Se déconnecter ?', 'Voulez-vous vraiment quitter votre espace de gestion ?', 'Se déconnecter', logout, 'danger')} companies={companies} activeCompanyId={activeCompanyIdState} onCompanyChange={changeCompany} isCompanyAdmin={activeCompany?.role === 'admin'} permissions={companyAccess?.permissions ?? {}} />
     <main className="main-content">
       <header className="topbar"><div className="topbar-leading"><div className="breadcrumb"><span>LasyNet</span><ChevronRight size={15} /><strong>{activePage}</strong></div></div><div className="topbar-actions"><label className="search-box"><Search size={17} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Rechercher dans le module..." /><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label="État du stockage" onClick={() => notify('Données synchronisées avec le serveur.')}><Bell size={19} /><span className="notification-dot" /></button><div className="topbar-divider" /><button className="date-chip" onClick={exportData}><Download size={16} /> Exporter <ChevronDown size={14} /></button></div></header>
       <div className="page-content">
@@ -358,7 +374,7 @@ function App() {
         {activePage === 'Rapports' && <ModuleHeader title="Rapports" subtitle="Consultez les indicateurs calculés à partir des données du serveur." action="Exporter le rapport" onAction={exportData}><div className="stats-grid"><article className="stat-card"><span className="stat-label">Chiffre encaissé</span><div className="stat-value">{money(totalPaid)}</div><div className="stat-footer">Paiements au statut « Payé »</div></article><article className="stat-card"><span className="stat-label">Sessions terminées</span><div className="stat-value">{store.sessions.filter(s=>s.status==='Terminée').length}</div></article><article className="stat-card"><span className="stat-label">Sessions actives</span><div className="stat-value">{activeSessions.length}</div></article><article className="stat-card"><span className="stat-label">Panier moyen encaissé</span><div className="stat-value">{money(store.payments.filter(p=>p.status==='Payé').length?Math.round(totalPaid/store.payments.filter(p=>p.status==='Payé').length):0)}</div></article></div><div className="panel module-placeholder"><div className="module-illustration"><Activity size={28}/></div><h2>Résumé de l’activité</h2><p>{store.computers.length} ordinateurs · {store.clients.length} clients · {store.sessions.length} sessions historiques · {store.payments.length} transactions. Les indicateurs sont calculés à partir des données du serveur.</p><button className="secondary-button" onClick={()=>setActivePage('Paiements')}><CreditCard size={16}/> Voir les paiements</button></div></ModuleHeader>}
         {activePage === 'Paramètres' && <ModuleHeader title="Paramètres" subtitle="Personnalisez votre établissement et les règles de facturation." action="Modifier les paramètres" onAction={()=>openModal('settings')}><div className="settings-grid"><div className="panel settings-card"><div className="stat-icon revenue"><Settings2 size={20}/></div><h2>Établissement</h2><p>Nom affiché dans l’espace de travail.</p><strong>{store.settings.cafeName}</strong></div><div className="panel settings-card"><div className="stat-icon sessions"><CreditCard size={20}/></div><h2>Tarification</h2><p>Tarif appliqué par heure commencée.</p><strong>{money(store.settings.hourlyRate)} / heure</strong></div><div className="panel settings-card"><div className="stat-icon computers"><ShieldCheck size={20}/></div><h2>Stockage sécurisé</h2><p>Les informations sont chargées depuis l’API et conservées dans la base de données.</p><strong>API · connectée</strong><button className="secondary-button" onClick={exportData}><Download size={15}/> Exporter une sauvegarde</button></div></div></ModuleHeader>}
         {activePage === 'Entreprises' && <CompanyManagement companies={companies} activeCompanyId={activeCompanyIdState} onSelect={changeCompany} onRefresh={refreshCompanies} notify={notify} />}
-        {activePage === 'Personnel' && activeCompany?.role === 'admin' && <StaffManagement key={activeCompanyIdState ?? 'none'} notify={notify} />}
+        {activePage === 'Personnel' && can('personnel.manage') && <StaffManagement key={activeCompanyIdState ?? 'none'} notify={notify} />}
         <footer className="page-footer"><span>© 2026 LasyNet</span><span><span className="tiny-dot green"/> Données serveur</span><span>Frontend · API connectée</span></footer>
       </div>
     </main>
