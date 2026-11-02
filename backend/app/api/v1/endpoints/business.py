@@ -9,7 +9,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_active_company_id, get_current_user, require_company_admin
+from app.api.deps import (
+    get_active_company_id,
+    get_current_user,
+    require_company_admin,
+    require_permission,
+)
 from app.db.session import get_db
 from app.models import AppSetting, CafeSession, Client, Computer, Payment
 from app.schemas.business import (
@@ -67,7 +72,7 @@ def _get_company_settings(db: Session, company_id: str) -> AppSetting:
     return settings
 
 
-@router.get("/clients", response_model=list[ClientRead])
+@router.get("/clients", response_model=list[ClientRead], dependencies=[Depends(require_permission("clients.read"))])
 def list_clients(
     db: Session = Depends(get_db),
     company_id: str = Depends(get_active_company_id),
@@ -77,7 +82,7 @@ def list_clients(
     ).all()
 
 
-@router.post("/clients", response_model=ClientRead, status_code=status.HTTP_201_CREATED)
+@router.post("/clients", response_model=ClientRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permission("clients.create"))])
 def create_client(
     payload: ClientCreate,
     db: Session = Depends(get_db),
@@ -90,7 +95,7 @@ def create_client(
     return client
 
 
-@router.get("/clients/{client_id}", response_model=ClientRead)
+@router.get("/clients/{client_id}", response_model=ClientRead, dependencies=[Depends(require_permission("clients.read"))])
 def get_client(
     client_id: str,
     db: Session = Depends(get_db),
@@ -99,7 +104,7 @@ def get_client(
     return _get_or_404(db, Client, client_id, company_id)
 
 
-@router.patch("/clients/{client_id}", response_model=ClientRead)
+@router.patch("/clients/{client_id}", response_model=ClientRead, dependencies=[Depends(require_permission("clients.update"))])
 def update_client(
     client_id: str,
     payload: ClientUpdate,
@@ -114,7 +119,7 @@ def update_client(
     return client
 
 
-@router.delete("/clients/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/clients/{client_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_permission("clients.delete"))])
 def delete_client(
     client_id: str,
     db: Session = Depends(get_db),
@@ -126,7 +131,7 @@ def delete_client(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/computers", response_model=list[ComputerRead])
+@router.get("/computers", response_model=list[ComputerRead], dependencies=[Depends(require_permission("computers.read"))])
 def list_computers(
     db: Session = Depends(get_db),
     company_id: str = Depends(get_active_company_id),
@@ -136,7 +141,7 @@ def list_computers(
     ).all()
 
 
-@router.post("/computers", response_model=ComputerRead, status_code=status.HTTP_201_CREATED)
+@router.post("/computers", response_model=ComputerRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permission("computers.create"))])
 def create_computer(
     payload: ComputerCreate,
     db: Session = Depends(get_db),
@@ -157,7 +162,7 @@ def create_computer(
     return computer
 
 
-@router.get("/computers/{computer_id}", response_model=ComputerRead)
+@router.get("/computers/{computer_id}", response_model=ComputerRead, dependencies=[Depends(require_permission("computers.read"))])
 def get_computer(
     computer_id: str,
     db: Session = Depends(get_db),
@@ -166,7 +171,7 @@ def get_computer(
     return _get_or_404(db, Computer, computer_id, company_id)
 
 
-@router.patch("/computers/{computer_id}", response_model=ComputerRead)
+@router.patch("/computers/{computer_id}", response_model=ComputerRead, dependencies=[Depends(require_permission("computers.update"))])
 def update_computer(
     computer_id: str,
     payload: ComputerUpdate,
@@ -191,7 +196,7 @@ def update_computer(
     return computer
 
 
-@router.delete("/computers/{computer_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/computers/{computer_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_permission("computers.delete"))])
 def delete_computer(
     computer_id: str,
     db: Session = Depends(get_db),
@@ -214,7 +219,7 @@ def delete_computer(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/sessions", response_model=list[SessionRead])
+@router.get("/sessions", response_model=list[SessionRead], dependencies=[Depends(require_permission("sessions.read"))])
 def list_sessions(
     db: Session = Depends(get_db),
     company_id: str = Depends(get_active_company_id),
@@ -226,7 +231,7 @@ def list_sessions(
     ).all()
 
 
-@router.post("/sessions", response_model=SessionRead, status_code=status.HTTP_201_CREATED)
+@router.post("/sessions", response_model=SessionRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permission("sessions.create"))])
 def create_session(
     payload: SessionCreate,
     db: Session = Depends(get_db),
@@ -244,7 +249,7 @@ def create_session(
     return session
 
 
-@router.get("/sessions/{session_id}", response_model=SessionRead)
+@router.get("/sessions/{session_id}", response_model=SessionRead, dependencies=[Depends(require_permission("sessions.read"))])
 def get_session(
     session_id: str,
     db: Session = Depends(get_db),
@@ -253,7 +258,7 @@ def get_session(
     return _get_or_404(db, CafeSession, session_id, company_id)
 
 
-@router.patch("/sessions/{session_id}", response_model=SessionRead)
+@router.patch("/sessions/{session_id}", response_model=SessionRead, dependencies=[Depends(require_permission("sessions.update"))])
 def update_session(
     session_id: str,
     payload: SessionUpdate,
@@ -280,7 +285,7 @@ def update_session(
     return session
 
 
-@router.get("/payments", response_model=list[PaymentRead])
+@router.get("/payments", response_model=list[PaymentRead], dependencies=[Depends(require_permission("payments.read"))])
 def list_payments(
     db: Session = Depends(get_db),
     company_id: str = Depends(get_active_company_id),
@@ -290,7 +295,7 @@ def list_payments(
     ).all()
 
 
-@router.post("/payments", response_model=PaymentRead, status_code=status.HTTP_201_CREATED)
+@router.post("/payments", response_model=PaymentRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permission("payments.create"))])
 def create_payment(
     payload: PaymentCreate,
     db: Session = Depends(get_db),
@@ -313,7 +318,7 @@ def create_payment(
     return payment
 
 
-@router.patch("/payments/{payment_id}", response_model=PaymentRead)
+@router.patch("/payments/{payment_id}", response_model=PaymentRead, dependencies=[Depends(require_permission("payments.update"))])
 def update_payment(
     payment_id: str,
     payload: PaymentUpdate,
@@ -331,7 +336,7 @@ def update_payment(
     return payment
 
 
-@router.get("/settings", response_model=SettingsRead)
+@router.get("/settings", response_model=SettingsRead, dependencies=[Depends(require_permission("settings.read"))])
 def get_settings(
     db: Session = Depends(get_db),
     company_id: str = Depends(get_active_company_id),
