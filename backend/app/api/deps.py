@@ -113,6 +113,33 @@ def get_active_company_id(
     return memberships[0].company_id
 
 
+def require_permission(permission: str):
+    """Build a dependency that enforces a company-scoped permission."""
+
+    def dependency(
+        current_user: User = Depends(get_current_user),
+        company_id: str = Depends(get_active_company_id),
+        db: Session = Depends(get_db),
+    ) -> User:
+        membership = db.get(CompanyMember, (current_user.id, company_id))
+        if membership is None or not membership.is_active:
+            raise HTTPException(status_code=403, detail="Accès à cette entreprise refusé.")
+        if membership.role == "admin":
+            return current_user
+        from app.core.permissions import DEFAULT_EMPLOYEE_PERMISSIONS
+
+        overrides = membership.permissions or {}
+        allowed = overrides.get(permission, DEFAULT_EMPLOYEE_PERMISSIONS.get(permission, False))
+        if allowed is not True:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Permission insuffisante pour effectuer cette action.",
+            )
+        return current_user
+
+    return dependency
+
+
 def require_company_admin(
     current_user: Annotated[User, Depends(get_current_user)],
     company_id: Annotated[str, Depends(get_active_company_id)],
