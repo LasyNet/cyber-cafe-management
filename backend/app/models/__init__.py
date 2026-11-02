@@ -1,4 +1,4 @@
-"""SQLAlchemy models for the cyber-café domain."""
+"""SQLAlchemy models for the multi-company cyber-café platform."""
 
 from datetime import datetime
 from decimal import Decimal
@@ -27,10 +27,11 @@ def new_id(prefix: str) -> str:
 
 
 class User(Base):
-    """Staff account; only a secure password hash may be stored."""
+    """Global identity; company-specific permissions live in CompanyMember."""
 
     __tablename__ = "users"
     __table_args__ = (
+        # Kept temporarily for backwards compatibility during the auth migration.
         CheckConstraint("role IN ('admin', 'employee')", name="ck_users_role"),
         UniqueConstraint("email", name="uq_users_email"),
     )
@@ -51,6 +52,98 @@ class User(Base):
         nullable=False,
     )
 
+    company_memberships: Mapped[list["CompanyMember"]] = relationship(back_populates="user")
+    created_companies: Mapped[list["Company"]] = relationship(
+        back_populates="created_by", foreign_keys="Company.created_by"
+    )
+
+
+class Company(Base):
+    """A tenant workspace; all operational data belongs to one company."""
+
+    __tablename__ = "companies"
+    __table_args__ = (UniqueConstraint("slug", name="uq_companies_slug"),)
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("CMP"))
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    slug: Mapped[str] = mapped_column(String(180), nullable=False)
+    created_by: Mapped[str | None] = mapped_column(
+        String(40), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    created_by_user: Mapped[User | None] = relationship(
+        back_populates="created_companies", foreign_keys=[created_by]
+    )
+    memberships: Mapped[list["CompanyMember"]] = relationship(back_populates="company")
+    invitations: Mapped[list["Invitation"]] = relationship(back_populates="company")
+
+
+class CompanyMember(Base):
+    """Membership and authorization role for one user in one company."""
+
+    __tablename__ = "company_members"
+    __table_args__ = (
+        CheckConstraint("role IN ('admin', 'employee')", name="ck_company_members_role"),
+        UniqueConstraint("user_id", "company_id", name="uq_company_members_user_company"),
+        Index("ix_company_members_company_id", "company_id"),
+    )
+
+    user_id: Mapped[str] = mapped_column(
+        String(40), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    company_id: Mapped[str] = mapped_column(
+        String(40), ForeignKey("companies.id", ondelete="CASCADE"), primary_key=True
+    )
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="employee")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    user: Mapped[User] = relationship(back_populates="company_memberships")
+    company: Mapped[Company] = relationship(back_populates="memberships")
+
+
+class Invitation(Base):
+    """Single-use, company-scoped invitation; only a token hash is persisted."""
+
+    __tablename__ = "invitations"
+    __table_args__ = (
+        CheckConstraint("role IN ('admin', 'employee')", name="ck_invitations_role"),
+        Index("ix_invitations_company_id", "company_id"),
+        Index("ix_invitations_expires_at", "expires_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("INV"))
+    company_id: Mapped[str] = mapped_column(
+        String(40), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    email: Mapped[str | None] = mapped_column(String(254))
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="employee")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_by: Mapped[str | None] = mapped_column(
+        String(40), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    company: Mapped[Company] = relationship(back_populates="invitations")
+    creator: Mapped[User | None] = relationship(foreign_keys=[created_by])
+
 
 class Client(Base):
     """Customer registered for cyber-café sessions."""
@@ -58,6 +151,9 @@ class Client(Base):
     __tablename__ = "clients"
 
     id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("CL"))
+    company_id: Mapped[str] = mapped_column(
+        String(40), ForeignKey("companies.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
     phone: Mapped[str | None] = mapped_column(String(40))
     email: Mapped[str | None] = mapped_column(String(254), index=True)
@@ -88,10 +184,13 @@ class Computer(Base):
             "status IN ('Disponible', 'En cours', 'Maintenance')",
             name="ck_computers_status",
         ),
-        Index("uq_computers_mac_address", "mac_address", unique=True),
+        Index("uq_computers_company_mac_address", "company_id", "mac_address", unique=True),
     )
 
     id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("PC"))
+    company_id: Mapped[str] = mapped_column(
+        String(40), ForeignKey("companies.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     computer_type: Mapped[str] = mapped_column(String(20), nullable=False, default="Interne")
     mac_address: Mapped[str | None] = mapped_column(String(17))
@@ -129,6 +228,9 @@ class CafeSession(Base):
     )
 
     id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("SES"))
+    company_id: Mapped[str] = mapped_column(
+        String(40), ForeignKey("companies.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
     computer_id: Mapped[str] = mapped_column(
         String(40),
         ForeignKey("computers.id", ondelete="RESTRICT"),
@@ -182,6 +284,9 @@ class Payment(Base):
     )
 
     id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("PAY"))
+    company_id: Mapped[str] = mapped_column(
+        String(40), ForeignKey("companies.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
     session_id: Mapped[str] = mapped_column(
         String(40),
         ForeignKey("cafe_sessions.id", ondelete="RESTRICT"),
@@ -210,15 +315,18 @@ class Payment(Base):
 
 
 class AppSetting(Base):
-    """Cafe-level settings; the database migration enforces a single row."""
+    """Settings belonging to one company; one row per tenant."""
 
     __tablename__ = "app_settings"
     __table_args__ = (
-        CheckConstraint("id = 1", name="ck_app_settings_singleton"),
+        UniqueConstraint("company_id", name="uq_app_settings_company_id"),
         CheckConstraint("hourly_rate >= 0", name="ck_app_settings_hourly_rate"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, default=1)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    company_id: Mapped[str] = mapped_column(
+        String(40), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     cafe_name: Mapped[str] = mapped_column(
         String(160), nullable=False, default="Cyber Café Central"
     )
