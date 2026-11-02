@@ -13,7 +13,7 @@ from app.api.v1.endpoints.auth import _login_failures
 from app.core.security import hash_password
 from app.db.base import Base
 from app.main import create_app
-from app.models import User
+from app.models import Company, CompanyMember, User
 
 TRUSTED_ORIGIN = "http://localhost:5173"
 
@@ -29,11 +29,26 @@ def client() -> Generator[TestClient, None, None]:
     test_sessions = sessionmaker(bind=engine, autoflush=False, autocommit=False, class_=Session)
 
     with test_sessions() as db:
+        user = User(
+            full_name="Test Admin",
+            email="admin@example.com",
+            password_hash=hash_password("VeryStrongPassword123"),
+            role="admin",
+            is_active=True,
+        )
+        db.add(user)
+        db.flush()
+        company = Company(
+            id="CMP-LEGACY",
+            name="Cyber Café Central",
+            slug="legacy-cyber-cafe",
+            created_by=user.id,
+        )
+        db.add(company)
         db.add(
-            User(
-                full_name="Test Admin",
-                email="admin@example.com",
-                password_hash=hash_password("VeryStrongPassword123"),
+            CompanyMember(
+                user_id=user.id,
+                company_id=company.id,
                 role="admin",
                 is_active=True,
             )
@@ -192,6 +207,14 @@ def test_first_registration_creates_administrator(empty_client: TestClient) -> N
     assert response.json()["email"] == "first@example.com"
     assert response.json()["role"] == "admin"
     assert "password_hash" not in response.json()
+
+    login = empty_client.post(
+        "/api/v1/auth/login",
+        headers={"Origin": TRUSTED_ORIGIN},
+        json={"email": "FIRST@example.com", "password": "StrongRegistrationPassword123"},
+    )
+    assert login.status_code == 200
+    assert empty_client.get("/api/v1/clients").status_code == 200
 
 
 def test_later_registration_requires_invitation(client: TestClient) -> None:
