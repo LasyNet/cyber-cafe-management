@@ -1,7 +1,9 @@
 """Authentication endpoints."""
 
+import hashlib
 import hmac
 from collections import deque
+from datetime import UTC, datetime
 from math import ceil
 from threading import Lock
 from time import monotonic
@@ -16,7 +18,7 @@ from app.api.deps import AUTH_COOKIE_NAME, get_current_user
 from app.core.config import get_settings
 from app.core.security import TOKEN_TTL_SECONDS, create_access_token, hash_password, verify_password
 from app.db.session import get_db
-from app.models import Company, CompanyMember, User
+from app.models import Company, CompanyMember, Invitation, User
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserRead
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -83,7 +85,21 @@ def register(
         db.execute(text("SELECT pg_advisory_xact_lock(731904221)"))
 
     existing_count = db.scalar(select(func.count()).select_from(User)) or 0
-    if existing_count:
+    invitation = None
+    if payload.invite_token:
+        token_hash = hashlib.sha256(payload.invite_token.encode("utf-8")).hexdigest()
+        invitation = db.scalar(select(Invitation).where(Invitation.token_hash == token_hash))
+        if invitation is None or invitation.revoked_at or invitation.accepted_at:
+            raise HTTPException(status_code=404, detail="Invitation invalide ou déjà utilisée.")
+        expires_at = invitation.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+        if expires_at <= datetime.now(UTC):
+            raise HTTPException(status_code=410, detail="Cette invitation a expiré.")
+        if invitation.email and invitation.email.lower() != payload.email.lower():
+            raise HTTPException(status_code=403, detail="Cette invitation est réservée à une autre adresse e-mail.")
+        role = invitation.role
+    elif existing_count:
         expected_code = settings.registration_invite_code
         supplied_code = payload.invite_code or ""
         if not expected_code or not hmac.compare_digest(
@@ -94,7 +110,7 @@ def register(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=(
                     "Les inscriptions sont réservées au personnel invité. "
-                    "Demande un code d’invitation à l’administrateur."
+                    "Utilise le lien d’invitation fourni par l’administrateur."
                 ),
             )
         role = "employee"
@@ -134,11 +150,18 @@ def register(
         elif role == "admin" and company.created_by is None:
             company.created_by = user.id
 
+        target_company_id = invitation.company_id if invitation else company.id
+        if invitation:
+            target_company = db.get(Company, target_company_id)
+            if target_company is None or not target_company.is_active:
+                raise HTTPException(status_code=404, detail="Entreprise de l’invitation introuvable.")
+            invitation.accepted_at = datetime.now(UTC)
         db.add(
             CompanyMember(
                 user_id=user.id,
-                company_id=company.id,
+                company_id=target_company_id,
                 role=role,
+                permissions={},
                 is_active=True,
             )
         )
