@@ -316,7 +316,10 @@ def get_session(
 @router.patch(
     "/sessions/{session_id}",
     response_model=SessionRead,
-    dependencies=[Depends(require_permission("sessions.update"))],
+    dependencies=[
+        Depends(require_permission("sessions.update")),
+        Depends(require_permission("payments.create")),
+    ],
 )
 def update_session(
     session_id: str,
