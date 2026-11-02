@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/cyber_cafe"
     cors_origins: str = "http://localhost:5173"
     auth_secret_key: str = "local-development-secret-change-me"
+    registration_invite_code: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",
