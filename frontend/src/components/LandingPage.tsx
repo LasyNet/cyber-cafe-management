@@ -1,29 +1,34 @@
 import type { FormEvent } from 'react';
-import { ArrowRight, CheckCircle2, Clock3, CreditCard, Gauge, Monitor, ShieldCheck, Users } from 'lucide-react';
+import { ArrowRight, Clock3, CreditCard, Gauge, Monitor, ShieldCheck, Users } from 'lucide-react';
 
-type LandingScreen = 'landing' | 'login';
-export function LandingPage({ screen, onNavigate, onSubmit, email, setEmail, password, setPassword, notice }: {
+type LandingScreen = 'landing' | 'login' | 'register';
+export function LandingPage({ screen, onNavigate, onSubmit, onRegister, email, setEmail, password, setPassword, fullName, setFullName, inviteCode, setInviteCode, notice }: {
   screen: LandingScreen;
-  onNavigate: (screen: 'landing' | 'login' | 'app') => void;
+  onNavigate: (screen: 'landing' | 'login' | 'register' | 'app') => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onRegister: (event: FormEvent<HTMLFormElement>) => void;
   email: string; setEmail: (value: string) => void;
   password: string; setPassword: (value: string) => void;
+  fullName: string; setFullName: (value: string) => void;
+  inviteCode: string; setInviteCode: (value: string) => void;
   notice: string;
 }) {
-  if (screen === 'login') return <main className="auth-page">
+  if (screen === 'login' || screen === 'register') return <main className="auth-page">
     <button className="landing-brand auth-back" onClick={() => onNavigate('landing')}><span className="landing-logo">LN</span><span>LasyNet</span></button>
     <section className="auth-card">
-      <div className="landing-eyebrow"><span className="landing-live-dot"/> ESPACE DE GESTION</div>
-      <h1>Heureux de vous revoir.</h1>
-      <p>Connectez-vous avec les identifiants fournis par votre administrateur.</p>
-      <form onSubmit={onSubmit} className="auth-form">
+      <div className="landing-eyebrow"><span className="landing-live-dot"/> {screen === 'login' ? 'ESPACE DE GESTION' : 'CRÉATION DE COMPTE'}</div>
+      <h1>{screen === 'login' ? 'Heureux de vous revoir.' : 'Rejoindre LasyNet.'}</h1>
+      <p>{screen === 'login' ? 'Connectez-vous avec vos identifiants.' : 'Crée le premier compte administrateur. Les comptes employés nécessitent un code d’invitation.'}</p>
+      <form onSubmit={screen === 'login' ? onSubmit : onRegister} className="auth-form">
+        {screen === 'register' && <label>Nom complet<input type="text" value={fullName} onChange={event => setFullName(event.target.value)} placeholder="Ex. Rakoto Jean" autoComplete="name" minLength={2} maxLength={160} required /></label>}
         <label>Adresse e-mail<input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="vous@exemple.com" autoComplete="email" required /></label>
-        <label>Mot de passe<input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Votre mot de passe" autoComplete="current-password" required /></label>
+        <label>Mot de passe<input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder={screen === 'register' ? '12 caractères minimum' : 'Votre mot de passe'} autoComplete={screen === 'register' ? 'new-password' : 'current-password'} minLength={screen === 'register' ? 12 : undefined} maxLength={256} required /></label>
+        {screen === 'register' && <label>Code d’invitation <span className="auth-optional">(facultatif pour le premier administrateur)</span><input type="password" value={inviteCode} onChange={event => setInviteCode(event.target.value)} placeholder="Fourni par l’administrateur" autoComplete="off" maxLength={256} /></label>}
         {notice && <div className="auth-notice" role="alert">{notice}</div>}
-        <button className="landing-primary auth-submit" type="submit">Se connecter <ArrowRight size={17}/></button>
+        <button className="landing-primary auth-submit" type="submit">{screen === 'login' ? 'Se connecter' : 'Créer mon compte'} <ArrowRight size={17}/></button>
       </form>
-      <div className="auth-security-note"><ShieldCheck size={17}/><span>Connexion protégée par le serveur. Vos identifiants sont vérifiés par l’API.</span></div>
-      <div className="auth-switch">Accès réservé au personnel autorisé. La création des comptes est gérée par un administrateur.</div>
+      <div className="auth-security-note"><ShieldCheck size={17}/><span>{screen === 'login' ? 'Connexion protégée par le serveur. Vos identifiants sont vérifiés par l’API.' : 'Le mot de passe est haché avant stockage. Le premier compte reçoit les droits administrateur.'}</span></div>
+      <div className="auth-switch">{screen === 'login' ? <>Pas encore de compte ? <button type="button" onClick={() => onNavigate('register')}>Créer un compte</button></> : <>Tu as déjà un compte ? <button type="button" onClick={() => onNavigate('login')}>Se connecter</button></>}</div>
     </section>
     <div className="auth-footer">© 2026 LasyNet · Gestion de cybercafé</div>
   </main>;
@@ -32,7 +37,7 @@ export function LandingPage({ screen, onNavigate, onSubmit, email, setEmail, pas
     <header className="landing-nav">
       <button className="landing-brand" onClick={() => onNavigate('landing')}><span className="landing-logo">LN</span><span>LasyNet</span></button>
       <nav className="landing-links" aria-label="Navigation principale"><a href="#fonctionnalites">Fonctionnalités</a><a href="#avantages">Avantages</a></nav>
-      <div className="landing-nav-actions"><button className="landing-login" onClick={() => onNavigate('login')}>Connexion</button><button className="landing-primary landing-small" onClick={() => onNavigate('login')}>Connexion <ArrowRight size={15}/></button></div>
+      <div className="landing-nav-actions"><button className="landing-login" onClick={() => onNavigate('login')}>Connexion</button><button className="landing-primary landing-small" onClick={() => onNavigate('register')}>Créer un compte <ArrowRight size={15}/></button></div>
     </header>
     <section className="landing-hero">
       <div className="landing-hero-copy">
@@ -59,8 +64,7 @@ export function LandingPage({ screen, onNavigate, onSubmit, email, setEmail, pas
     </section>
     <section className="landing-proof"><div><strong>Tout est centralisé</strong><span>Les outils essentiels, réunis dans un seul espace.</span></div><div className="proof-item"><Monitor size={18}/><span>Parc informatique</span></div><div className="proof-item"><Clock3 size={18}/><span>Suivi des sessions</span></div><div className="proof-item"><CreditCard size={18}/><span>Suivi des paiements</span></div><div className="proof-item"><ShieldCheck size={18}/><span>Contrôle simplifié</span></div></section>
     <section className="landing-features" id="fonctionnalites"><div className="landing-section-heading"><div className="landing-eyebrow">LES OUTILS DU QUOTIDIEN</div><h2>Moins de dispersion.<br/><span>Plus de maîtrise.</span></h2><p>Gardez une vision claire des opérations et prenez vos décisions plus facilement.</p></div><div className="landing-feature-grid"><article><span className="feature-icon blue"><Monitor size={21}/></span><h3>Parc informatique</h3><p>Visualisez les postes disponibles, en cours d’utilisation ou en maintenance.</p></article><article><span className="feature-icon violet"><Clock3 size={21}/></span><h3>Sessions & clients</h3><p>Suivez les sessions et retrouvez facilement les informations de vos clients.</p></article><article><span className="feature-icon green"><CreditCard size={21}/></span><h3>Paiements & factures</h3><p>Consultez les paiements et préparez des factures PDF en quelques clics.</p></article></div></section>
-    <section className="landing-cta" id="avantages"><div><span className="landing-eyebrow">PRÊT À COMMENCER ?</span><h2>Votre activité mérite<br/>un tableau de bord à sa mesure.</h2><p>Découvrez une expérience pensée pour simplifier la gestion quotidienne.</p></div><div className="landing-cta-actions"><button className="landing-primary" onClick={() => onNavigate('login')}>Se connecter <ArrowRight size={17}/></button><button className="landing-cta-login" onClick={() => onNavigate('login')}>J’ai déjà un compte</button></div></section>
+    <section className="landing-cta" id="avantages"><div><span className="landing-eyebrow">PRÊT À COMMENCER ?</span><h2>Votre activité mérite<br/>un tableau de bord à sa mesure.</h2><p>Découvrez une expérience pensée pour simplifier la gestion quotidienne.</p></div><div className="landing-cta-actions"><button className="landing-primary" onClick={() => onNavigate('register')}>Créer un compte <ArrowRight size={17}/></button><button className="landing-cta-login" onClick={() => onNavigate('login')}>J’ai déjà un compte</button></div></section>
     <footer className="landing-footer"><button className="landing-brand" onClick={() => onNavigate('landing')}><span className="landing-logo">LN</span><span>LasyNet</span></button><span>© 2026 LasyNet. Une gestion plus simple, chaque jour.</span><button onClick={() => onNavigate('login')}>Connexion <ArrowRight size={14}/></button></footer>
   </main>;
 }
-
