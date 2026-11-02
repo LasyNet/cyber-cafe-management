@@ -1,5 +1,7 @@
 """Reusable authentication and authorization dependencies."""
 
+# ruff: noqa: B008
+
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
