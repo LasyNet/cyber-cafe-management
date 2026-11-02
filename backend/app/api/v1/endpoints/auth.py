@@ -86,7 +86,9 @@ def register(
     if existing_count:
         expected_code = settings.registration_invite_code
         supplied_code = payload.invite_code or ""
-        if not expected_code or not hmac.compare_digest(supplied_code.encode(), expected_code.encode()):
+        if not expected_code or not hmac.compare_digest(
+            supplied_code.encode(), expected_code.encode()
+        ):
             _record_failed_login(request)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
