@@ -88,7 +88,11 @@ def register(
     invitation = None
     if payload.invite_token:
         token_hash = hashlib.sha256(payload.invite_token.encode("utf-8")).hexdigest()
-        invitation = db.scalar(select(Invitation).where(Invitation.token_hash == token_hash).with_for_update())
+        invitation = db.scalar(
+            select(Invitation)
+            .where(Invitation.token_hash == token_hash)
+            .with_for_update()
+        )
         if invitation is None or invitation.revoked_at or invitation.accepted_at:
             raise HTTPException(status_code=404, detail="Invitation invalide ou déjà utilisée.")
         expires_at = invitation.expires_at
@@ -97,7 +101,10 @@ def register(
         if expires_at <= datetime.now(UTC):
             raise HTTPException(status_code=410, detail="Cette invitation a expiré.")
         if invitation.email and invitation.email.lower() != payload.email.lower():
-            raise HTTPException(status_code=403, detail="Cette invitation est réservée à une autre adresse e-mail.")
+            raise HTTPException(
+                status_code=403,
+                detail="Cette invitation est réservée à une autre adresse e-mail.",
+            )
         role = invitation.role
     elif existing_count:
         expected_code = settings.registration_invite_code
@@ -154,7 +161,9 @@ def register(
         if invitation:
             target_company = db.get(Company, target_company_id)
             if target_company is None or not target_company.is_active:
-                raise HTTPException(status_code=404, detail="Entreprise de l’invitation introuvable.")
+                raise HTTPException(
+                    status_code=404, detail="Entreprise de l’invitation introuvable."
+                )
             invitation.accepted_at = datetime.now(UTC)
         db.add(
             CompanyMember(
