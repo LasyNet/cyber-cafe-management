@@ -95,6 +95,14 @@ def test_business_data_is_isolated_by_active_company() -> None:
             assert company_b_response.status_code == 200
             assert [item["name"] for item in company_b_response.json()] == ["Client B"]
 
+            created_client = client.post(
+                "/api/v1/clients",
+                headers={**headers, "X-Company-ID": "CMP-TENANT-B"},
+                json={"name": "Client B2"},
+            )
+            assert created_client.status_code == 201
+            assert created_client.json()["name"] == "Client B2"
+
             foreign_company = client.get(
                 "/api/v1/clients",
                 headers={**headers, "X-Company-ID": "CMP-TENANT-C"},
