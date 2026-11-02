@@ -13,6 +13,7 @@ type Props = {
 
 export function CompanyManagement({ companies, activeCompanyId, onSelect, onRefresh, notify, requestConfirmation }: Props) {
   const [name, setName] = useState('');
+  const [renameName, setRenameName] = useState('');
   const [saving, setSaving] = useState(false);
   const active = companies.find(company => company.id === activeCompanyId) ?? null;
 
@@ -36,13 +37,13 @@ export function CompanyManagement({ companies, activeCompanyId, onSelect, onRefr
   };
 
   const rename = async () => {
-    if (!active || !name.trim()) return;
+    if (!active || !renameName.trim()) return;
     requestConfirmation('Renommer cette entreprise ?', 'Le nom affiché dans l’espace de travail et les paramètres sera modifié.', 'Enregistrer le nom', async () => {
       setSaving(true);
       try {
-        await updateCurrentCompany(name.trim());
+        await updateCurrentCompany(renameName.trim());
         await onRefresh();
-        setName('');
+        setRenameName('');
         notify('Nom de l’entreprise mis à jour.');
       } catch (error) {
         notify(error instanceof Error ? error.message : 'Modification impossible.');
@@ -66,6 +67,6 @@ export function CompanyManagement({ companies, activeCompanyId, onSelect, onRefr
       <div><h2>Créer un nouvel espace</h2><p>Chaque entreprise possède ses propres ordinateurs, clients, sessions, paiements et employés.</p></div>
       <form onSubmit={submit} className="tenant-create-form"><label className="field-label">Nom de l’entreprise<input value={name} onChange={event => setName(event.target.value)} placeholder="Ex. Cyber Café Andavamamba" maxLength={160} required /></label><button className="primary-button" disabled={saving || !name.trim()}><Plus size={16}/> {saving ? 'Création…' : 'Créer une entreprise'}</button></form>
     </div>
-    {active?.role === 'admin' && <div className="panel tenant-create-panel"><div><h2>Renommer l’espace actif</h2><p>Le nom sera également actualisé dans les paramètres du cybercafé.</p></div><form className="tenant-create-form" onSubmit={event => { event.preventDefault(); void rename(); }}><label className="field-label">Nouveau nom<input value={name} onChange={event => setName(event.target.value)} placeholder={active.name} maxLength={160}/></label><button className="secondary-button" disabled={saving || !name.trim()}><RefreshCw size={15}/> Enregistrer le nom</button></form></div>}
+    {active?.role === 'admin' && <div className="panel tenant-create-panel"><div><h2>Renommer l’espace actif</h2><p>Le nom sera également actualisé dans les paramètres du cybercafé.</p></div><form className="tenant-create-form" onSubmit={event => { event.preventDefault(); void rename(); }}><label className="field-label">Nouveau nom<input value={renameName} onChange={event => setRenameName(event.target.value)} placeholder={active.name} maxLength={160}/></label><button className="secondary-button" disabled={saving || !renameName.trim()}><RefreshCw size={15}/> Enregistrer le nom</button></form></div>}
   </section>;
 }
