@@ -4,12 +4,12 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.security import decode_access_token
 from app.db.session import get_db
-from sqlalchemy import select
 
 from app.models import Company, CompanyMember, User
 
