@@ -343,7 +343,7 @@ function App() {
         setActiveCompanyId(joined.company_id);
         setActiveCompanyIdState(joined.company_id);
         setRegisterInviteCode('');
-        setAuthNotice('Invitation acceptée : tu as rejoint ' + joined.company_name + '.');
+        notify('Invitation acceptée : tu as rejoint ' + joined.company_name + '.');
       }
       navigateScreen('app');
     } catch (error) {
