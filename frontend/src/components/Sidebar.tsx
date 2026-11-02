@@ -13,9 +13,10 @@ type SidebarProps = {
   activeCompanyId: string | null;
   onCompanyChange: (id: string) => void;
   isCompanyAdmin: boolean;
+  permissions: Record<string, boolean>;
 };
 
-export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate, onLogout, companies, activeCompanyId, onCompanyChange, isCompanyAdmin }: SidebarProps) {
+export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate, onLogout, companies, activeCompanyId, onCompanyChange, isCompanyAdmin, permissions }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar-scroll">
@@ -38,7 +39,10 @@ export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate,
         </label>
         <div className="nav-label">MENU PRINCIPAL</div>
         <nav className="navigation">
-          {nav.slice(0, 5).map(({ label, icon: Icon }) => (
+          {nav.slice(0, 5).filter(({ label }) => {
+            const key: Partial<Record<Page, string>> = { 'Ordinateurs': 'computers.read', 'Sessions': 'sessions.read', 'Clients': 'clients.read', 'Paiements': 'payments.read' };
+            return !key[label] || permissions[key[label] as string] !== false;
+          }).map(({ label, icon: Icon }) => (
             <button key={label} className={`nav-item ${activePage === label ? 'active' : ''}`} onClick={() => onNavigate(label)}>
               <Icon size={18} strokeWidth={1.9} />
               <span>{label}</span>
@@ -48,7 +52,11 @@ export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate,
         </nav>
         <div className="nav-label management-label">GESTION</div>
         <nav className="navigation">
-          {nav.slice(5).filter(({ label }) => label !== 'Personnel' || isCompanyAdmin).map(({ label, icon: Icon }) => (
+          {nav.slice(5).filter(({ label }) => {
+            if (label === 'Personnel') return isCompanyAdmin || permissions['personnel.manage'] === true;
+            const key: Partial<Record<Page, string>> = { 'Facturation': 'payments.read', 'Rapports': 'payments.read', 'Paramètres': 'settings.read' };
+            return !key[label] || permissions[key[label] as string] !== false;
+          }).map(({ label, icon: Icon }) => (
             <button key={label} className={`nav-item ${activePage === label ? 'active' : ''}`} onClick={() => onNavigate(label)}>
               <Icon size={18} />
               <span>{label}</span>
