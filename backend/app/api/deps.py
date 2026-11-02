@@ -11,7 +11,7 @@ from app.core.security import decode_access_token
 from app.db.session import get_db
 from sqlalchemy import select
 
-from app.models import CompanyMember, User
+from app.models import Company, CompanyMember, User
 
 AUTH_COOKIE_NAME = "lasynet_session"
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -79,9 +79,11 @@ def get_active_company_id(
     """Resolve the selected company and verify the user's active membership."""
     memberships = db.scalars(
         select(CompanyMember)
+        .join(Company, Company.id == CompanyMember.company_id)
         .where(
             CompanyMember.user_id == current_user.id,
             CompanyMember.is_active.is_(True),
+            Company.is_active.is_(True),
         )
         .order_by(CompanyMember.created_at, CompanyMember.company_id)
     ).all()
@@ -110,3 +112,18 @@ def get_active_company_id(
             detail="Sélectionnez une entreprise avant d'accéder à ses données.",
         )
     return memberships[0].company_id
+
+
+def require_company_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+    company_id: Annotated[str, Depends(get_active_company_id)],
+    db: Annotated[Session, Depends(get_db)],
+) -> User:
+    """Authorize an administrator in the currently selected company only."""
+    membership = db.get(CompanyMember, (current_user.id, company_id))
+    if membership is None or not membership.is_active or membership.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Droits administrateur requis pour cette entreprise.",
+        )
+    return current_user
