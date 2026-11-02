@@ -17,7 +17,7 @@ from app.api.deps import (
     require_company_admin,
     require_permission,
 )
-from app.core.permissions import ALL_PERMISSIONS
+from app.core.permissions import ALL_PERMISSIONS, DEFAULT_EMPLOYEE_PERMISSIONS, PERMISSION_GROUPS
 from app.db.session import get_db
 from app.models import AppSetting, Company, CompanyMember, Invitation, User
 from app.schemas.tenant import (
@@ -165,6 +165,16 @@ def update_current_company(
         "is_active": company.is_active,
         "role": membership.role,
         "created_at": company.created_at,
+    }
+
+
+@router.get("/permissions")
+def permission_catalog():
+    """Return the canonical permission catalogue and employee defaults."""
+    return {
+        "groups": {key: list(value) for key, value in PERMISSION_GROUPS.items()},
+        "all_permissions": list(ALL_PERMISSIONS),
+        "default_employee_permissions": DEFAULT_EMPLOYEE_PERMISSIONS,
     }
 
 
