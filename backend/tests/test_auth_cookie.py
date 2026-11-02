@@ -158,8 +158,6 @@ def test_login_rate_limit_blocks_repeated_failures(client: TestClient) -> None:
     assert "retry-after" in limited.headers
     _login_failures.clear()
 
-
-
 def test_first_registration_creates_administrator(empty_client: TestClient) -> None:
     response = empty_client.post(
         "/api/v1/auth/register",
