@@ -265,3 +265,45 @@ def test_registration_rejects_short_password(empty_client: TestClient) -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_company_invitation_can_register_and_join_its_company(client: TestClient) -> None:
+    login = client.post(
+        "/api/v1/auth/login",
+        headers={"Origin": TRUSTED_ORIGIN},
+        json={"email": "admin@example.com", "password": "VeryStrongPassword123"},
+    )
+    assert login.status_code == 200
+
+    invitation = client.post(
+        "/api/v1/companies/invitations",
+        headers={"Origin": TRUSTED_ORIGIN, "X-Company-ID": "CMP-LEGACY"},
+        json={"email": "invited@example.com", "role": "employee", "expires_in_days": 7},
+    )
+    assert invitation.status_code == 201
+    invite_token = invitation.json()["invite_token"]
+
+    registration = client.post(
+        "/api/v1/auth/register",
+        headers={"Origin": TRUSTED_ORIGIN},
+        json={
+            "full_name": "Invited Employee",
+            "email": "invited@example.com",
+            "password": "StrongRegistrationPassword123",
+            "invite_token": invite_token,
+        },
+    )
+    assert registration.status_code == 201
+    assert registration.json()["role"] == "employee"
+
+    employee_login = client.post(
+        "/api/v1/auth/login",
+        headers={"Origin": TRUSTED_ORIGIN},
+        json={"email": "invited@example.com", "password": "StrongRegistrationPassword123"},
+    )
+    assert employee_login.status_code == 200
+    companies = client.get("/api/v1/companies")
+    assert companies.status_code == 200
+    assert len(companies.json()) == 1
+    assert companies.json()[0]["id"] == "CMP-LEGACY"
+    assert companies.json()[0]["role"] == "employee"
