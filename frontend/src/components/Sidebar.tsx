@@ -12,9 +12,10 @@ type SidebarProps = {
   companies: Company[];
   activeCompanyId: string | null;
   onCompanyChange: (id: string) => void;
+  isCompanyAdmin: boolean;
 };
 
-export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate, onLogout, companies, activeCompanyId, onCompanyChange }: SidebarProps) {
+export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate, onLogout, companies, activeCompanyId, onCompanyChange, isCompanyAdmin }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar-scroll">
@@ -47,7 +48,7 @@ export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate,
         </nav>
         <div className="nav-label management-label">GESTION</div>
         <nav className="navigation">
-          {nav.slice(5).map(({ label, icon: Icon }) => (
+          {nav.slice(5).filter(({ label }) => label !== 'Personnel' || isCompanyAdmin).map(({ label, icon: Icon }) => (
             <button key={label} className={`nav-item ${activePage === label ? 'active' : ''}`} onClick={() => onNavigate(label)}>
               <Icon size={18} />
               <span>{label}</span>
