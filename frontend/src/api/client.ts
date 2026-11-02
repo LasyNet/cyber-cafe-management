@@ -53,6 +53,15 @@ const json = (method: string, body?: unknown): RequestInit => ({
   ...(body === undefined ? {} : { body: JSON.stringify(body) }),
 });
 
+export async function register(fullName: string, email: string, password: string, inviteCode: string): Promise<AuthUser> {
+  return request<AuthUser>('/auth/register', json('POST', {
+    full_name: fullName,
+    email,
+    password,
+    ...(inviteCode.trim() ? { invite_code: inviteCode.trim() } : {}),
+  }));
+}
+
 export async function login(email: string, password: string): Promise<AuthUser> {
   clearToken();
   await request<{ expires_in: number }>('/auth/login', json('POST', { email, password }));
