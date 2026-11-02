@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { money, dateTime, elapsed } from './utils/formatters';
-import { clearToken, currentUser, loadStore, login, logoutSession, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings } from './api/client';
+import { clearToken, currentUser, loadStore, login, logoutSession, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings, register } from './api/client';
 import { pageFromHash, pageSlugs, type Page } from './navigation';
 import { ModuleHeader } from './components/ModuleHeader';
 import { LandingPage } from './components/LandingPage';
@@ -11,9 +11,10 @@ import {
   Activity, ArrowUpRight, ArrowRight, Bell, Check, ChevronDown, ChevronRight, Clock3, CreditCard, Download, FileText, Monitor, MoreHorizontal, Plus, Search, Settings2, ShieldCheck, Trash2, Users, X, Pencil, Play
 } from 'lucide-react';
 
-function screenFromPath(): 'landing' | 'login' | 'app' {
+function screenFromPath(): 'landing' | 'login' | 'register' | 'app' {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   if (path === '/login') return 'login';
+  if (path === '/register') return 'register';
   if (path === '/app') return 'app';
   return 'landing';
 }
@@ -41,14 +42,16 @@ function App() {
   const [paymentFilter, setPaymentFilter] = useState<'Tous' | Payment['status']>('Tous');
   const [paymentMethods, setPaymentMethods] = useState<Record<string, Payment['method']>>({});
   const [selectedInvoice, setSelectedInvoice] = useState<Payment | null>(null);
-  const [screen, setScreen] = useState<'landing' | 'login' | 'app'>(screenFromPath);
+  const [screen, setScreen] = useState<'landing' | 'login' | 'register' | 'app'>(screenFromPath);
   const [authName, setAuthName] = useState('');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authNotice, setAuthNotice] = useState('');
+  const [registerName, setRegisterName] = useState('');
+  const [registerInviteCode, setRegisterInviteCode] = useState('');
 
-  const navigateScreen = (next: 'landing' | 'login' | 'app') => {
-    const path = next === 'landing' ? '/' : next === 'login' ? '/login' : '/app';
+  const navigateScreen = (next: 'landing' | 'login' | 'register' | 'app') => {
+    const path = next === 'landing' ? '/' : next === 'login' ? '/login' : next === 'register' ? '/register' : '/app';
     const hash = next === 'app' ? '#dashboard' : '';
     if (window.location.pathname !== path || window.location.hash !== hash) {
       window.history.pushState(null, '', `${path}${hash}`);
@@ -91,6 +94,7 @@ function App() {
       const path = window.location.pathname.replace(/\/+$/, '') || '/';
       if (path === '/app') setScreen('app');
       else if (path === '/login') setScreen('login');
+      else if (path === '/register') setScreen('register');
       else setScreen('landing');
       if (path === '/app') setActivePage(pageFromHash());
     };
@@ -211,6 +215,26 @@ function App() {
     setAuthNotice(warning);
     setScreen('login');
   };
+  const submitRegistration = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!registerName.trim() || !authEmail.trim() || !authPassword) {
+      setAuthNotice('Renseigne ton nom, ton adresse e-mail et ton mot de passe.');
+      return;
+    }
+    setAuthNotice('');
+    try {
+      const created = await register(registerName.trim(), authEmail.trim(), authPassword, registerInviteCode);
+      setAuthPassword('');
+      setRegisterName('');
+      setRegisterInviteCode('');
+      setAuthNotice(created.role === 'admin'
+        ? 'Compte administrateur créé. Tu peux maintenant te connecter.'
+        : 'Compte employé créé. Tu peux maintenant te connecter.');
+      navigateScreen('login');
+    } catch (error) {
+      setAuthNotice(error instanceof Error ? error.message : 'Inscription impossible. Vérifie les informations saisies.');
+    }
+  };
   const submitAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!authEmail.trim() || !authPassword.trim()) { setAuthNotice('Saisis ton adresse e-mail et ton mot de passe.'); return; }
@@ -222,7 +246,7 @@ function App() {
       setAuthNotice(error instanceof Error ? error.message : 'Connexion impossible. Vérifie l’API et tes identifiants.');
     }
   };
-  if (screen !== 'app') return <LandingPage screen={screen} onNavigate={navigateScreen} onSubmit={submitAuth} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} notice={authNotice} />;
+  if (screen !== 'app') return <LandingPage screen={screen} onNavigate={navigateScreen} onSubmit={submitAuth} onRegister={submitRegistration} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} fullName={registerName} setFullName={setRegisterName} inviteCode={registerInviteCode} setInviteCode={setRegisterInviteCode} notice={authNotice} />;
 
   return <div className="app-shell">
     <Sidebar cafeName={store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} />
