@@ -97,6 +97,25 @@ def test_login_sets_httponly_cookie_without_exposing_token(client: TestClient) -
     assert client.get("/api/v1/auth/me").status_code == 200
 
 
+def test_production_login_cookie_allows_cross_origin_fetch(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "app_env", "production")
+    response = client.post(
+        "/api/v1/auth/login",
+        headers={"Origin": TRUSTED_ORIGIN},
+        json={"email": "admin@example.com", "password": "VeryStrongPassword123"},
+    )
+
+    assert response.status_code == 200
+    cookie = response.headers["set-cookie"].lower()
+    assert "samesite=none" in cookie
+    assert "secure" in cookie
+    assert "httponly" in cookie
+
+
 def test_login_rejects_untrusted_origin(client: TestClient) -> None:
     response = client.post(
         "/api/v1/auth/login",
