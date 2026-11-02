@@ -11,6 +11,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Numeric,
+    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -104,6 +105,7 @@ class CompanyMember(Base):
         String(40), ForeignKey("companies.id", ondelete="CASCADE"), primary_key=True
     )
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="employee")
+    permissions: Mapped[dict[str, bool]] = mapped_column(JSON, nullable=False, default=dict)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
