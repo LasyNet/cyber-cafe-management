@@ -10,6 +10,7 @@ export type Company = { id: string; name: string; slug: string; is_active: boole
 export type CompanyMember = { user_id: string; full_name: string; email: string; role: 'admin' | 'employee'; permissions: Record<string, boolean>; is_active: boolean; created_at: string };
 export type CompanyInvitation = { id: string; email: string | null; role: 'admin' | 'employee'; expires_at: string; accepted_at: string | null; revoked_at: string | null; created_at: string; invite_token?: string };
 export type PermissionCatalog = { groups: Record<string, string[]>; all_permissions: string[]; default_employee_permissions: Record<string, boolean> };
+export type CompanyAccess = { company_id: string; role: 'admin' | 'employee'; permissions: Record<string, boolean> };
 
 export const getActiveCompanyId = (): string | null => { try { return window.localStorage.getItem(ACTIVE_COMPANY_KEY); } catch { return null; } };
 export const setActiveCompanyId = (id: string | null) => { try { if (id) window.localStorage.setItem(ACTIVE_COMPANY_KEY, id); else window.localStorage.removeItem(ACTIVE_COMPANY_KEY); } catch { /* Selection is reloaded from the membership list when storage is unavailable. */ } };
@@ -144,3 +145,5 @@ export const listCompanyInvitations = () => request<CompanyInvitation[]>('/compa
 export const createCompanyInvitation = (payload: { email?: string; role: 'admin' | 'employee'; expires_in_days: number }) => request<CompanyInvitation>('/companies/invitations', json('POST', payload));
 export const revokeCompanyInvitation = (id: string) => request<void>(`/companies/invitations/${encodeURIComponent(id)}`, json('DELETE'));
 export const acceptCompanyInvitation = (inviteToken: string) => request<{ company_id: string; company_name: string; role: string }>('/companies/invitations/accept', json('POST', { invite_token: inviteToken }));
+
+export const getCompanyAccess = () => request<CompanyAccess>('/companies/access');
