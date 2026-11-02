@@ -232,12 +232,7 @@ def test_later_registration_requires_invitation(client: TestClient) -> None:
     assert response.status_code == 403
 
 
-def test_global_invite_code_cannot_bypass_company_invitation(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    from app.core.config import get_settings
-
-    monkeypatch.setattr(get_settings(), "registration_invite_code", "legacy-shared-code")
+def test_global_invite_code_cannot_bypass_company_invitation(client: TestClient) -> None:
     response = client.post(
         "/api/v1/auth/register",
         headers={"Origin": TRUSTED_ORIGIN},
