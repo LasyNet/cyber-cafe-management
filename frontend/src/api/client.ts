@@ -51,7 +51,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       throw new Error(body?.detail || 'Erreur API (' + response.status + ')');
     }
     if (response.status === 204) return undefined as T;
-    return response.json() as Promise<T>;
+    return await response.json() as T;
   } finally {
     pendingRequests = Math.max(0, pendingRequests - 1);
     notifyLoading();
