@@ -53,6 +53,30 @@ def client() -> Generator[TestClient, None, None]:
     engine.dispose()
 
 
+@pytest.fixture
+def empty_client() -> Generator[TestClient, None, None]:
+    """Provide an empty database to exercise the one-time administrator bootstrap."""
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    test_sessions = sessionmaker(bind=engine, autoflush=False, autocommit=False, class_=Session)
+
+    def override_get_db() -> Generator[Session, None, None]:
+        with test_sessions() as db:
+            yield db
+
+    app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
+    Base.metadata.drop_all(engine)
+    engine.dispose()
+
+
 def test_login_sets_httponly_cookie_without_exposing_token(client: TestClient) -> None:
     response = client.post(
         "/api/v1/auth/login",
@@ -133,3 +157,70 @@ def test_login_rate_limit_blocks_repeated_failures(client: TestClient) -> None:
     assert limited.status_code == 429
     assert "retry-after" in limited.headers
     _login_failures.clear()
+
+
+
+def test_first_registration_creates_administrator(empty_client: TestClient) -> None:
+    response = empty_client.post(
+        "/api/v1/auth/register",
+        headers={"Origin": TRUSTED_ORIGIN},
+        json={
+            "full_name": "First Administrator",
+            "email": "FIRST@example.com",
+            "password": "StrongRegistrationPassword123",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["email"] == "first@example.com"
+    assert response.json()["role"] == "admin"
+    assert "password_hash" not in response.json()
+
+
+def test_later_registration_requires_invitation(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/auth/register",
+        headers={"Origin": TRUSTED_ORIGIN},
+        json={
+            "full_name": "New Employee",
+            "email": "employee@example.com",
+            "password": "StrongRegistrationPassword123",
+        },
+    )
+
+    assert response.status_code == 403
+
+
+def test_invited_registration_creates_employee(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "registration_invite_code", "team-invite-2026")
+    response = client.post(
+        "/api/v1/auth/register",
+        headers={"Origin": TRUSTED_ORIGIN},
+        json={
+            "full_name": "New Employee",
+            "email": "employee@example.com",
+            "password": "StrongRegistrationPassword123",
+            "invite_code": "team-invite-2026",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["role"] == "employee"
+
+
+def test_registration_rejects_short_password(empty_client: TestClient) -> None:
+    response = empty_client.post(
+        "/api/v1/auth/register",
+        headers={"Origin": TRUSTED_ORIGIN},
+        json={
+            "full_name": "First Administrator",
+            "email": "admin@example.com",
+            "password": "short",
+        },
+    )
+
+    assert response.status_code == 422
