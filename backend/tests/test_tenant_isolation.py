@@ -133,3 +133,99 @@ def test_business_data_is_isolated_by_active_company() -> None:
         app.dependency_overrides.clear()
         Base.metadata.drop_all(engine)
         engine.dispose()
+
+
+def test_employee_permissions_are_enforced_and_customizable() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    test_sessions = sessionmaker(bind=engine, autoflush=False, autocommit=False, class_=Session)
+    with test_sessions() as db:
+        admin = User(
+            id="USR-PERM-ADMIN",
+            full_name="Permission Admin",
+            email="permission-admin@example.com",
+            password_hash=hash_password("VeryStrongPassword123"),
+            role="admin",
+            is_active=True,
+        )
+        employee = User(
+            id="USR-PERM-EMPLOYEE",
+            full_name="Permission Employee",
+            email="permission-employee@example.com",
+            password_hash=hash_password("VeryStrongPassword123"),
+            role="employee",
+            is_active=True,
+        )
+        company = Company(
+            id="CMP-PERMISSIONS",
+            name="Permissions Café",
+            slug="permissions-cafe",
+            created_by=admin.id,
+        )
+        db.add_all([admin, employee, company])
+        db.flush()
+        db.add_all(
+            [
+                CompanyMember(user_id=admin.id, company_id=company.id, role="admin"),
+                CompanyMember(user_id=employee.id, company_id=company.id, role="employee"),
+                Client(id="CL-PERM-DELETE", company_id=company.id, name="Protected Client"),
+            ]
+        )
+        db.commit()
+
+    def override_get_db() -> Generator[Session, None, None]:
+        with test_sessions() as db:
+            yield db
+
+    app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
+    settings = get_settings()
+    admin_token = create_access_token(
+        user_id="USR-PERM-ADMIN",
+        role="admin",
+        secret_key=settings.auth_secret_key,
+    )
+    employee_token = create_access_token(
+        user_id="USR-PERM-EMPLOYEE",
+        role="employee",
+        secret_key=settings.auth_secret_key,
+    )
+    admin_headers = {
+        "Authorization": f"Bearer {admin_token}",
+        "X-Company-ID": "CMP-PERMISSIONS",
+    }
+    employee_headers = {
+        "Authorization": f"Bearer {employee_token}",
+        "X-Company-ID": "CMP-PERMISSIONS",
+    }
+
+    try:
+        with TestClient(app) as client:
+            assert client.get("/api/v1/clients", headers=employee_headers).status_code == 200
+            assert client.delete(
+                "/api/v1/clients/CL-PERM-DELETE", headers=employee_headers
+            ).status_code == 403
+            assert client.patch(
+                "/api/v1/settings",
+                headers=employee_headers,
+                json={"cafe_name": "Forbidden"},
+            ).status_code == 403
+
+            customized = client.patch(
+                "/api/v1/companies/members/USR-PERM-EMPLOYEE",
+                headers=admin_headers,
+                json={"permissions": {"clients.delete": True}},
+            )
+            assert customized.status_code == 200
+            assert customized.json()["permissions"]["clients.delete"] is True
+            assert client.delete(
+                "/api/v1/clients/CL-PERM-DELETE", headers=employee_headers
+            ).status_code == 204
+    finally:
+        app.dependency_overrides.clear()
+        Base.metadata.drop_all(engine)
+        engine.dispose()
