@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_active_company_id, get_current_user, require_admin
+from app.api.deps import get_active_company_id, get_current_user, require_company_admin
 from app.db.session import get_db
 from app.models import AppSetting, CafeSession, Client, Computer, Payment
 from app.schemas.business import (
@@ -350,7 +350,7 @@ def update_settings(
     payload: SettingsUpdate,
     db: Session = Depends(get_db),
     company_id: str = Depends(get_active_company_id),
-    _admin=Depends(require_admin),
+    _admin=Depends(require_company_admin),
 ):
     settings = _get_company_settings(db, company_id)
     for key, value in payload.model_dump(exclude_unset=True).items():
