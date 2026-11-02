@@ -127,6 +127,12 @@ def upgrade() -> None:
     op.create_unique_constraint(
         "uq_app_settings_company_id", "app_settings", ["company_id"]
     )
+    op.execute(
+        sa.text(
+            "SELECT setval(pg_get_serial_sequence('app_settings', 'id'), "
+            "COALESCE((SELECT MAX(id) FROM app_settings), 1))"
+        )
+    )
 
 
 def downgrade() -> None:
