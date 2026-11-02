@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { money, dateTime, elapsed } from './utils/formatters';
-import { clearToken, currentUser, getToken, loadStore, login, logoutSession, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings } from './api/client';
+import { clearToken, currentUser, loadStore, login, logoutSession, createComputer as apiCreateComputer, updateComputer as apiUpdateComputer, deleteComputer as apiDeleteComputer, createClient as apiCreateClient, updateClient as apiUpdateClient, deleteClient as apiDeleteClient, createSession as apiCreateSession, updateSession as apiUpdateSession, createPayment as apiCreatePayment, updatePayment as apiUpdatePayment, updateSettings as apiUpdateSettings } from './api/client';
 import { pageFromHash, pageSlugs, type Page } from './navigation';
 import { ModuleHeader } from './components/ModuleHeader';
 import { LandingPage } from './components/LandingPage';
@@ -14,7 +14,7 @@ import {
 function screenFromPath(): 'landing' | 'login' | 'app' {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   if (path === '/login') return 'login';
-  if (path === '/app') return getToken() ? 'app' : 'login';
+  if (path === '/app') return 'app';
   return 'landing';
 }
 
@@ -89,13 +89,8 @@ function App() {
   useEffect(() => {
     const syncRouteWithHistory = () => {
       const path = window.location.pathname.replace(/\/+$/, '') || '/';
-      if (path === '/app') {
-        if (getToken()) setScreen('app');
-        else {
-          window.history.replaceState(null, '', '/login');
-          setScreen('login');
-        }
-      } else if (path === '/login') setScreen('login');
+      if (path === '/app') setScreen('app');
+      else if (path === '/login') setScreen('login');
       else setScreen('landing');
       if (path === '/app') setActivePage(pageFromHash());
     };
