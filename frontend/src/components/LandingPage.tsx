@@ -18,16 +18,16 @@ export function LandingPage({ screen, onNavigate, onSubmit, onRegister, email, s
     <section className="auth-card">
       <div className="landing-eyebrow"><span className="landing-live-dot"/> {screen === 'login' ? 'ESPACE DE GESTION' : 'CRÉATION DE COMPTE'}</div>
       <h1>{screen === 'login' ? 'Heureux de vous revoir.' : 'Rejoindre LasyNet.'}</h1>
-      <p>{screen === 'login' ? 'Connectez-vous avec vos identifiants.' : 'Crée le premier compte administrateur. Les comptes employés nécessitent un code d’invitation.'}</p>
+      <p>{screen === 'login' ? 'Connectez-vous avec vos identifiants.' : 'Crée ton compte administrateur ou rejoins une entreprise avec le lien d’invitation reçu.'}</p>
       <form onSubmit={screen === 'login' ? onSubmit : onRegister} className="auth-form">
         {screen === 'register' && <label>Nom complet<input type="text" value={fullName} onChange={event => setFullName(event.target.value)} placeholder="Ex. Rakoto Jean" autoComplete="name" minLength={2} maxLength={160} required /></label>}
         <label>Adresse e-mail<input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="vous@exemple.com" autoComplete="email" required /></label>
         <label>Mot de passe<input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder={screen === 'register' ? '12 caractères minimum' : 'Votre mot de passe'} autoComplete={screen === 'register' ? 'new-password' : 'current-password'} minLength={screen === 'register' ? 12 : undefined} maxLength={256} required /></label>
-        {screen === 'register' && <label>Code d’invitation <span className="auth-optional">(facultatif pour le premier administrateur)</span><input type="password" value={inviteCode} onChange={event => setInviteCode(event.target.value)} placeholder="Fourni par l’administrateur" autoComplete="off" maxLength={256} /></label>}
+        {screen === 'register' && <label>Jeton d’invitation <span className="auth-optional">(à renseigner si tu as reçu un lien)</span><input type="password" value={inviteCode} onChange={event => setInviteCode(event.target.value)} placeholder="Jeton présent dans ton lien d’invitation" autoComplete="off" maxLength={256} /></label>}
         {notice && <div className="auth-notice" role="alert">{notice}</div>}
         <button className="landing-primary auth-submit" type="submit">{screen === 'login' ? 'Se connecter' : 'Créer mon compte'} <ArrowRight size={17}/></button>
       </form>
-      <div className="auth-security-note"><ShieldCheck size={17}/><span>{screen === 'login' ? 'Connexion protégée par le serveur. Vos identifiants sont vérifiés par l’API.' : 'Le mot de passe est haché avant stockage. Le premier compte reçoit les droits administrateur.'}</span></div>
+      <div className="auth-security-note"><ShieldCheck size={17}/><span>{screen === 'login' ? 'Connexion protégée par le serveur. Vos identifiants sont vérifiés par l’API.' : 'Le mot de passe est haché avant stockage. Les accès à une entreprise dépendent de son invitation.'}</span></div>
       <div className="auth-switch">{screen === 'login' ? <>Pas encore de compte ? <button type="button" onClick={() => onNavigate('register')}>Créer un compte</button></> : <>Tu as déjà un compte ? <button type="button" onClick={() => onNavigate('login')}>Se connecter</button></>}</div>
     </section>
     <div className="auth-footer">© 2026 LasyNet · Gestion de cybercafé</div>
