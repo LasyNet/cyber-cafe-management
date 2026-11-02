@@ -168,6 +168,26 @@ def update_current_company(
     }
 
 
+@router.get("/access")
+def current_company_access(
+    current_user: Annotated[User, Depends(get_current_user)],
+    company_id: Annotated[str, Depends(get_active_company_id)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Return the effective role and permissions in the selected company."""
+    membership = db.get(CompanyMember, (current_user.id, company_id))
+    if membership is None or not membership.is_active:
+        raise HTTPException(status_code=403, detail="Accès à cette entreprise refusé.")
+    if membership.role == "admin":
+        permissions = {key: True for key in ALL_PERMISSIONS}
+    else:
+        permissions = {
+            **DEFAULT_EMPLOYEE_PERMISSIONS,
+            **(membership.permissions or {}),
+        }
+    return {"company_id": company_id, "role": membership.role, "permissions": permissions}
+
+
 @router.get("/permissions")
 def permission_catalog():
     """Return the canonical permission catalogue and employee defaults."""
