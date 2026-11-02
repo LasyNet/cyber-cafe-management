@@ -87,7 +87,7 @@ function App() {
   const activeCompany = companies.find(company => company.id === activeCompanyIdState) ?? null;
   const can = (permission: string) => activeCompany?.role === 'admin' || companyAccess?.permissions[permission] === true;
   const canStartSession = can('sessions.create') && can('computers.read') && can('clients.read');
-  const canEndSession = can('sessions.update') && can('payments.create');
+  const canEndSession = can('sessions.update') && can('payments.create') && can('settings.read');
   const changeCompany = async (companyId: string) => {
     if (!companyId || companyId === activeCompanyIdState) return;
     setActiveCompanyId(companyId);
