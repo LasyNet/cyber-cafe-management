@@ -82,10 +82,12 @@ function App() {
     window.addEventListener('lasynet:loading', handleLoading);
     return () => window.removeEventListener('lasynet:loading', handleLoading);
   }, []);
-  const refreshStore = async () => { const fresh = await loadStore(); setStore(fresh); };
+  const refreshStore = async (accessOverride?: CompanyAccess) => { const fresh = await loadStore(accessOverride ?? companyAccess ?? undefined); setStore(fresh); };
   const refreshCompanies = async () => { const memberships = await listCompanies(); setCompanies(memberships); };
   const activeCompany = companies.find(company => company.id === activeCompanyIdState) ?? null;
   const can = (permission: string) => activeCompany?.role === 'admin' || companyAccess?.permissions[permission] === true;
+  const canStartSession = canStartSession && can('computers.read') && can('clients.read');
+  const canEndSession = canEndSession && can('payments.create');
   const changeCompany = async (companyId: string) => {
     if (!companyId || companyId === activeCompanyIdState) return;
     setActiveCompanyId(companyId);
@@ -94,7 +96,7 @@ function App() {
     try {
       const access = await getCompanyAccess();
       setCompanyAccess(access);
-      await refreshStore();
+      await refreshStore(access);
       setActivePage('Vue d’ensemble');
       notify('Espace entreprise changé.');
     } catch (error) {
@@ -127,7 +129,7 @@ function App() {
         }
         const access = await getCompanyAccess();
         if (!cancelled) setCompanyAccess(access);
-        const fresh = await loadStore();
+        const fresh = await loadStore(access);
         if (!cancelled) setStore(fresh);
       } catch (error) {
         if (!cancelled) {
@@ -144,10 +146,10 @@ function App() {
     const pagePermission: Partial<Record<Page, string>> = {
       Ordinateurs: 'computers.read', Sessions: 'sessions.read', Clients: 'clients.read',
       Paiements: 'payments.read', Facturation: 'payments.read', Rapports: 'payments.read',
-      Paramètres: 'settings.read', Personnel: 'personnel.manage',
+      Paramètres: 'settings.read', 
     };
     const required = pagePermission[activePage];
-    if (required && !can(required)) {
+    if ((activePage === 'Personnel' && activeCompany.role !== 'admin') || (required && !can(required))) {
       setActivePage('Vue d’ensemble');
       return;
     }
@@ -381,7 +383,7 @@ function App() {
         {activePage === 'Rapports' && <ModuleHeader title="Rapports" subtitle="Consultez les indicateurs calculés à partir des données du serveur." action="Exporter le rapport" onAction={exportData}><div className="stats-grid"><article className="stat-card"><span className="stat-label">Chiffre encaissé</span><div className="stat-value">{money(totalPaid)}</div><div className="stat-footer">Paiements au statut « Payé »</div></article><article className="stat-card"><span className="stat-label">Sessions terminées</span><div className="stat-value">{store.sessions.filter(s=>s.status==='Terminée').length}</div></article><article className="stat-card"><span className="stat-label">Sessions actives</span><div className="stat-value">{activeSessions.length}</div></article><article className="stat-card"><span className="stat-label">Panier moyen encaissé</span><div className="stat-value">{money(store.payments.filter(p=>p.status==='Payé').length?Math.round(totalPaid/store.payments.filter(p=>p.status==='Payé').length):0)}</div></article></div><div className="panel module-placeholder"><div className="module-illustration"><Activity size={28}/></div><h2>Résumé de l’activité</h2><p>{store.computers.length} ordinateurs · {store.clients.length} clients · {store.sessions.length} sessions historiques · {store.payments.length} transactions. Les indicateurs sont calculés à partir des données du serveur.</p><button className="secondary-button" onClick={()=>setActivePage('Paiements')}><CreditCard size={16}/> Voir les paiements</button></div></ModuleHeader>}
         {activePage === 'Paramètres' && <ModuleHeader title="Paramètres" subtitle="Personnalisez votre établissement et les règles de facturation." action={can('settings.update') ? "Modifier les paramètres" : undefined} onAction={can('settings.update') ? ()=>openModal('settings') : undefined}><div className="settings-grid"><div className="panel settings-card"><div className="stat-icon revenue"><Settings2 size={20}/></div><h2>Établissement</h2><p>Nom affiché dans l’espace de travail.</p><strong>{store.settings.cafeName}</strong></div><div className="panel settings-card"><div className="stat-icon sessions"><CreditCard size={20}/></div><h2>Tarification</h2><p>Tarif appliqué par heure commencée.</p><strong>{money(store.settings.hourlyRate)} / heure</strong></div><div className="panel settings-card"><div className="stat-icon computers"><ShieldCheck size={20}/></div><h2>Stockage sécurisé</h2><p>Les informations sont chargées depuis l’API et conservées dans la base de données.</p><strong>API · connectée</strong><button className="secondary-button" onClick={exportData}><Download size={15}/> Exporter une sauvegarde</button></div></div></ModuleHeader>}
         {activePage === 'Entreprises' && <CompanyManagement companies={companies} activeCompanyId={activeCompanyIdState} onSelect={changeCompany} onRefresh={refreshCompanies} notify={notify} requestConfirmation={requestConfirmation} />}
-        {activePage === 'Personnel' && can('personnel.manage') && <StaffManagement key={activeCompanyIdState ?? 'none'} notify={notify} requestConfirmation={requestConfirmation} />}
+        {activePage === 'Personnel' && activeCompany?.role === 'admin' && <StaffManagement key={activeCompanyIdState ?? 'none'} notify={notify} requestConfirmation={requestConfirmation} />}
         <footer className="page-footer"><span>© 2026 LasyNet</span><span><span className="tiny-dot green"/> Données serveur</span><span>Frontend · API connectée</span></footer>
       </div>
     </main>
