@@ -86,8 +86,8 @@ function App() {
   const refreshCompanies = async () => { const memberships = await listCompanies(); setCompanies(memberships); };
   const activeCompany = companies.find(company => company.id === activeCompanyIdState) ?? null;
   const can = (permission: string) => activeCompany?.role === 'admin' || companyAccess?.permissions[permission] === true;
-  const canStartSession = canStartSession && can('computers.read') && can('clients.read');
-  const canEndSession = canEndSession && can('payments.create');
+  const canStartSession = can('sessions.create') && can('computers.read') && can('clients.read');
+  const canEndSession = can('sessions.update') && can('payments.create');
   const changeCompany = async (companyId: string) => {
     if (!companyId || companyId === activeCompanyIdState) return;
     setActiveCompanyId(companyId);
