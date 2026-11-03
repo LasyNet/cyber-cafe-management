@@ -17,6 +17,7 @@ from app.api.deps import (
     require_company_admin,
 )
 from app.core.permissions import ALL_PERMISSIONS, DEFAULT_EMPLOYEE_PERMISSIONS, PERMISSION_GROUPS
+from app.core.plans import effective_plan, require_staff_quota
 from app.db.session import get_db
 from app.models import AppSetting, Company, CompanyMember, Invitation, User
 from app.schemas.tenant import (
@@ -56,6 +57,10 @@ def _membership_read(membership: CompanyMember) -> dict:
         "slug": membership.company.slug,
         "is_active": membership.company.is_active,
         "role": membership.role,
+        "plan": effective_plan(membership.company),
+        "subscription_status": membership.company.subscription_status,
+        "subscription_started_at": membership.company.subscription_started_at,
+        "subscription_expires_at": membership.company.subscription_expires_at,
         "created_at": membership.company.created_at,
     }
 
@@ -101,6 +106,15 @@ def create_company(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
+    owned_companies = db.scalars(
+        select(Company).where(Company.created_by == current_user.id)
+    ).all()
+    if owned_companies and not any(effective_plan(item) == "premium" for item in owned_companies):
+        raise HTTPException(
+            status_code=403,
+            detail="L'offre Gratuite autorise une seule entreprise par compte. Passez à Premium pour en créer d'autres.",
+        )
+
     base_slug = _slugify(payload.name)
     slug = base_slug
     while db.scalar(select(Company.id).where(Company.slug == slug)):
@@ -138,6 +152,10 @@ def create_company(
         "slug": company.slug,
         "is_active": company.is_active,
         "role": membership.role,
+        "plan": effective_plan(company),
+        "subscription_status": company.subscription_status,
+        "subscription_started_at": company.subscription_started_at,
+        "subscription_expires_at": company.subscription_expires_at,
         "created_at": company.created_at,
     }
 
@@ -304,6 +322,11 @@ def create_invitation(
     db: Annotated[Session, Depends(get_db)],
     _admin: Annotated[User, Depends(require_company_admin)],
 ):
+    company = db.get(Company, company_id)
+    if company is None or not company.is_active:
+        raise HTTPException(status_code=404, detail="Entreprise introuvable.")
+    require_staff_quota(db, company, payload.role)
+
     email = payload.email.lower() if payload.email else None
     if email:
         invited_user = db.scalar(select(User).where(func.lower(User.email) == email))
