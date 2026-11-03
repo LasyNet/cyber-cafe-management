@@ -32,7 +32,5 @@ PERMISSION_GROUPS: Final[dict[str, tuple[str, ...]]] = {
 }
 
 ALL_PERMISSIONS: Final[tuple[str, ...]] = tuple(
-    f"{module}.{action}"
-    for module, actions in PERMISSION_GROUPS.items()
-    for action in actions
+    f"{module}.{action}" for module, actions in PERMISSION_GROUPS.items() for action in actions
 )
