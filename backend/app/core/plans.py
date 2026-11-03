@@ -11,12 +11,14 @@ from app.models import CafeSession, Client, Company, CompanyMember, Computer, In
 FREE_LIMITS = {
     "computers": 5,
     "employees": 2,
+    "admins": 1,
     "clients": 100,
     "companies": 1,
 }
 PREMIUM_LIMITS = {
     "computers": None,
     "employees": None,
+    "admins": None,
     "clients": None,
     "companies": None,
 }
