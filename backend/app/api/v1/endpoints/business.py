@@ -282,9 +282,7 @@ def list_sessions(
     query = select(CafeSession).where(CafeSession.company_id == company_id)
     cutoff = history_cutoff(company) if company else None
     if cutoff is not None:
-        query = query.where(
-            or_(CafeSession.status == "En cours", CafeSession.started_at >= cutoff)
-        )
+        query = query.where(or_(CafeSession.status == "En cours", CafeSession.started_at >= cutoff))
     return db.scalars(query.order_by(CafeSession.started_at.desc())).all()
 
 
