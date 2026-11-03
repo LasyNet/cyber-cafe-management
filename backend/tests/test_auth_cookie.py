@@ -233,7 +233,7 @@ def test_later_registration_creates_a_free_company(client: TestClient) -> None:
     assert response.json()["role"] == "employee"
 
 
-def test_legacy_global_invite_code_does_not_grant_platform_admin(client: TestClient) -> None:(client: TestClient) -> None:
+def test_legacy_global_invite_code_does_not_grant_platform_admin(client: TestClient) -> None:
     response = client.post(
         "/api/v1/auth/register",
         headers={"Origin": TRUSTED_ORIGIN},
