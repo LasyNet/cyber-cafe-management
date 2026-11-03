@@ -86,11 +86,7 @@ def register(
     invitation = None
     if payload.invite_token:
         token_hash = hashlib.sha256(payload.invite_token.encode("utf-8")).hexdigest()
-        invitation = db.scalar(
-            select(Invitation)
-            .where(Invitation.token_hash == token_hash)
-            .with_for_update()
-        )
+        invitation = db.scalar(select(Invitation).where(Invitation.token_hash == token_hash).with_for_update())
         if invitation is None or invitation.revoked_at or invitation.accepted_at:
             raise HTTPException(status_code=404, detail="Invitation invalide ou déjà utilisée.")
         expires_at = invitation.expires_at
