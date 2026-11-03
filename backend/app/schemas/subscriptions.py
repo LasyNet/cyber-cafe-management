@@ -1,7 +1,5 @@
 """Pydantic schemas for subscription requests and plan administration."""
 
-from datetime import datetime
-
 from pydantic import BaseModel, Field
 
 
