@@ -63,7 +63,14 @@ class Company(Base):
     """A tenant workspace; all operational data belongs to one company."""
 
     __tablename__ = "companies"
-    __table_args__ = (UniqueConstraint("slug", name="uq_companies_slug"),)
+    __table_args__ = (
+        UniqueConstraint("slug", name="uq_companies_slug"),
+        CheckConstraint("plan IN ('free', 'premium')", name="ck_companies_plan"),
+        CheckConstraint(
+            "subscription_status IN ('active', 'expired', 'cancelled')",
+            name="ck_companies_subscription_status",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("CMP"))
     name: Mapped[str] = mapped_column(String(160), nullable=False)
@@ -375,3 +382,9 @@ class SubscriptionRequest(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    company: Mapped["Company"] = relationship()
+    requester: Mapped["User"] = relationship(foreign_keys=[requested_by])
+    reviewer: Mapped["User | None"] = relationship(foreign_keys=[reviewed_by])
+
+
+# SubscriptionRequest relationships are explicit because User has multiple foreign-key roles.
