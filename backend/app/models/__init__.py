@@ -72,6 +72,10 @@ class Company(Base):
         String(40), ForeignKey("users.id", ondelete="SET NULL")
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    plan: Mapped[str] = mapped_column(String(20), nullable=False, default="free")
+    subscription_status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    subscription_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    subscription_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -341,4 +345,33 @@ class AppSetting(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+
+
+class SubscriptionRequest(Base):
+    """A manual Premium upgrade request reviewed by a platform administrator."""
+
+    __tablename__ = "subscription_requests"
+    __table_args__ = (
+        CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="ck_subscription_requests_status"),
+        Index("ix_subscription_requests_company_status", "company_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True, default=lambda: new_id("SUB"))
+    company_id: Mapped[str] = mapped_column(
+        String(40), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    requested_by: Mapped[str] = mapped_column(
+        String(40), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    message: Mapped[str | None] = mapped_column(Text)
+    reviewed_by: Mapped[str | None] = mapped_column(
+        String(40), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    duration_days: Mapped[int | None] = mapped_column()
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
