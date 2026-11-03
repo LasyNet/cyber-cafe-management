@@ -119,6 +119,7 @@ def register(
             email=payload.email,
             password_hash=hash_password(payload.password),
             role=global_role,
+            is_platform_admin=existing_count == 0,
             is_active=True,
         )
         db.add(user)
