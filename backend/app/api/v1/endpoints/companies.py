@@ -109,10 +109,14 @@ def create_company(
     owned_companies = db.scalars(
         select(Company).where(Company.created_by == current_user.id)
     ).all()
-    if owned_companies and not any(effective_plan(item) == "premium" for item in owned_companies):
+    has_premium_company = any(effective_plan(item) == "premium" for item in owned_companies)
+    if owned_companies and not has_premium_company:
         raise HTTPException(
             status_code=403,
-            detail="L'offre Gratuite autorise une seule entreprise par compte. Passez à Premium pour en créer d'autres.",
+            detail=(
+                "L'offre Gratuite autorise une seule entreprise par compte. "
+                "Passez à Premium pour en créer d'autres."
+            ),
         )
 
     base_slug = _slugify(payload.name)
