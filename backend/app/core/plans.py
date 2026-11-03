@@ -1,6 +1,6 @@
 """Subscription plans and server-side quota enforcement."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
@@ -14,6 +14,7 @@ FREE_LIMITS = {
     "admins": 1,
     "clients": 100,
     "companies": 1,
+    "history_days": 30,
 }
 PREMIUM_LIMITS = {
     "computers": None,
@@ -21,6 +22,7 @@ PREMIUM_LIMITS = {
     "admins": None,
     "clients": None,
     "companies": None,
+    "history_days": None,
 }
 
 
@@ -102,3 +104,11 @@ def require_staff_quota(db: Session, company: Company, role: str) -> None:
                 "Passez à Premium pour ajouter d'autres membres."
             ),
         )
+
+
+def history_cutoff(company: Company, now: datetime | None = None) -> datetime | None:
+    """Return the earliest visible history date for the company's current plan."""
+    days = plan_limits(company)["history_days"]
+    if days is None:
+        return None
+    return (now or datetime.now(UTC)) - timedelta(days=days)
