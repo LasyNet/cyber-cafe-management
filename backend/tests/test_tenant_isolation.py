@@ -205,7 +205,21 @@ def test_employee_permissions_are_enforced_and_customizable() -> None:
 
     try:
         with TestClient(app) as client:
+            employee_access = client.get("/api/v1/companies/access", headers=employee_headers)
+            assert employee_access.status_code == 200
+            assert employee_access.json()["permissions"]["clients.read"] is True
+            assert employee_access.json()["permissions"]["computers.create"] is False
             assert client.get("/api/v1/clients", headers=employee_headers).status_code == 200
+            assert client.post(
+                "/api/v1/computers",
+                headers=employee_headers,
+                json={
+                    "name": "Restricted PC",
+                    "computer_type": "Interne",
+                    "mac_address": "00:11:22:33:44:55",
+                    "status": "Disponible",
+                },
+            ).status_code == 403
             assert client.delete(
                 "/api/v1/clients/CL-PERM-DELETE", headers=employee_headers
             ).status_code == 403
@@ -214,6 +228,10 @@ def test_employee_permissions_are_enforced_and_customizable() -> None:
                 headers=employee_headers,
                 json={"cafe_name": "Forbidden"},
             ).status_code == 403
+
+            admin_access = client.get("/api/v1/companies/access", headers=admin_headers)
+            assert admin_access.status_code == 200
+            assert all(admin_access.json()["permissions"].values())
 
             customized = client.patch(
                 "/api/v1/companies/members/USR-PERM-EMPLOYEE",
@@ -225,6 +243,23 @@ def test_employee_permissions_are_enforced_and_customizable() -> None:
             assert client.delete(
                 "/api/v1/clients/CL-PERM-DELETE", headers=employee_headers
             ).status_code == 204
+
+            revoked = client.patch(
+                "/api/v1/companies/members/USR-PERM-EMPLOYEE",
+                headers=admin_headers,
+                json={"permissions": {"clients.delete": False}},
+            )
+            assert revoked.status_code == 200
+            assert client.delete(
+                "/api/v1/clients/CL-PERM-DELETE", headers=employee_headers
+            ).status_code == 403
+
+            unknown_permission = client.patch(
+                "/api/v1/companies/members/USR-PERM-EMPLOYEE",
+                headers=admin_headers,
+                json={"permissions": {"root.access": True}},
+            )
+            assert unknown_permission.status_code == 422
     finally:
         app.dependency_overrides.clear()
         Base.metadata.drop_all(engine)
