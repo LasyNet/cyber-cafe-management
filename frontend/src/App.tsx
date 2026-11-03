@@ -92,6 +92,7 @@ function App() {
     if (!companyId || companyId === activeCompanyIdState) return;
     setActiveCompanyId(companyId);
     setActiveCompanyIdState(companyId);
+    setCompanyAccess(null);
     setStore({ computers: [], clients: [], sessions: [], payments: [], settings: { cafeName: '', hourlyRate: 0, currency: 'Ar' } });
     try {
       const access = await getCompanyAccess();
