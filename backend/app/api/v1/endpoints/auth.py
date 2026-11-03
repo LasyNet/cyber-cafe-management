@@ -97,7 +97,10 @@ def register(
         if expires_at <= datetime.now(UTC):
             raise HTTPException(status_code=410, detail="Cette invitation a expiré.")
         if invitation.email and invitation.email.lower() != payload.email.lower():
-            raise HTTPException(status_code=403, detail="Cette invitation est réservée à une autre adresse e-mail.")
+            raise HTTPException(
+                status_code=403,
+                detail="Cette invitation est réservée à une autre adresse e-mail.",
+            )
 
     # The first account bootstraps the platform administrator. Later self-registrations
     # receive a Free company; invitation roles remain company-scoped, not platform roles.
@@ -124,12 +127,19 @@ def register(
         if invitation:
             company = db.get(Company, invitation.company_id)
             if company is None or not company.is_active:
-                raise HTTPException(status_code=404, detail="Entreprise de l’invitation introuvable.")
+                raise HTTPException(
+                    status_code=404, detail="Entreprise de l’invitation introuvable."
+                )
             invitation.accepted_at = datetime.now(UTC)
         elif existing_count == 0:
             company = db.scalar(select(Company).where(Company.slug == "legacy-cyber-cafe"))
             if company is None:
-                company = Company(name="Cyber Café Central", slug="legacy-cyber-cafe", created_by=user.id, is_active=True)
+                company = Company(
+                    name="Cyber Café Central",
+                    slug="legacy-cyber-cafe",
+                    created_by=user.id,
+                    is_active=True,
+                )
                 db.add(company)
                 db.flush()
             elif company.created_by is None:
@@ -143,7 +153,14 @@ def register(
             )
             db.add(company)
             db.flush()
-            db.add(AppSetting(company_id=company.id, cafe_name=company.name, hourly_rate=1200, currency="Ar"))
+            db.add(
+                AppSetting(
+                    company_id=company.id,
+                    cafe_name=company.name,
+                    hourly_rate=1200,
+                    currency="Ar",
+                )
+            )
 
         db.add(
             CompanyMember(
