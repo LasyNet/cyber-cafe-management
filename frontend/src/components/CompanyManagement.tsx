@@ -92,7 +92,7 @@ export function CompanyManagement({ companies, activeCompanyId, onSelect, onRefr
         <h2>Offre actuelle : {active.plan === 'premium' ? 'Premium' : 'Gratuite'}</h2>
         <p>{active.plan === 'premium'
           ? `Votre espace bénéficie de Premium jusqu'au ${active.subscription_expires_at ? new Date(active.subscription_expires_at).toLocaleDateString('fr-FR') : 'sans date d’expiration'}.`
-          : '5 ordinateurs, 2 employés et 100 clients. Les sessions et les paiements restent illimités.'}</p>
+          : '5 ordinateurs, 2 employés, 100 clients et 30 jours d’historique. Sessions et paiements restent illimités.'}</p>
       </div>
       {active.plan === 'free' && active.role === 'admin' && <button className="primary-button" onClick={() => requestConfirmation(
         'Demander le passage à Premium ?',
