@@ -329,9 +329,11 @@ function App() {
       setAuthPassword('');
       setRegisterName('');
       setRegisterInviteCode('');
-      setAuthNotice(created.role === 'admin'
-        ? 'Compte administrateur créé. Tu peux maintenant te connecter.'
-        : 'Compte employé créé. Tu peux maintenant te connecter.');
+      setAuthNotice(registerInviteCode.trim()
+        ? 'Compte créé. Tu peux maintenant te connecter pour rejoindre l’entreprise invitée.'
+        : created.role === 'admin'
+          ? 'Compte administrateur LasyNet créé. Tu peux maintenant te connecter.'
+          : 'Compte créé avec un espace Gratuit. Tu peux maintenant te connecter.');
       navigateScreen('login');
     } catch (error) {
       setAuthNotice(error instanceof Error ? error.message : 'Inscription impossible. Vérifie les informations saisies.');
