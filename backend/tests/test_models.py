@@ -17,6 +17,7 @@ def test_expected_domain_and_tenant_tables_are_registered() -> None:
         "cafe_sessions",
         "payments",
         "app_settings",
+        "subscription_requests",
     }
 
 
