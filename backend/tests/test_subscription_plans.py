@@ -42,7 +42,6 @@ def test_free_plan_enforces_computer_and_client_quotas() -> None:
             email="free-owner@example.com",
             password_hash="not-used",
             role="admin",
-            is_platform_admin=True,
             is_active=True,
         )
         company = Company(
@@ -126,6 +125,7 @@ def test_platform_admin_can_manually_activate_premium() -> None:
             email="platform-admin@example.com",
             password_hash="not-used",
             role="admin",
+            is_platform_admin=True,
             is_active=True,
         )
         company = Company(
