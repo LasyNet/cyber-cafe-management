@@ -218,7 +218,7 @@ def test_first_registration_creates_administrator(empty_client: TestClient) -> N
     assert empty_client.get("/api/v1/clients").status_code == 200
 
 
-def test_later_registration_requires_invitation(client: TestClient) -> None:
+def test_later_registration_creates_a_free_company(client: TestClient) -> None:
     response = client.post(
         "/api/v1/auth/register",
         headers={"Origin": TRUSTED_ORIGIN},
@@ -229,10 +229,11 @@ def test_later_registration_requires_invitation(client: TestClient) -> None:
         },
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 201
+    assert response.json()["role"] == "employee"
 
 
-def test_global_invite_code_cannot_bypass_company_invitation(client: TestClient) -> None:
+def test_legacy_global_invite_code_does_not_grant_platform_admin(client: TestClient) -> None:(client: TestClient) -> None:
     response = client.post(
         "/api/v1/auth/register",
         headers={"Origin": TRUSTED_ORIGIN},
@@ -244,7 +245,8 @@ def test_global_invite_code_cannot_bypass_company_invitation(client: TestClient)
         },
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 201
+    assert response.json()["role"] == "employee"
 
 
 def test_registration_rejects_short_password(empty_client: TestClient) -> None:
