@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Building2, Check, Plus, RefreshCw } from 'lucide-react';
-import { createCompany, updateCurrentCompany, type Company } from '../api/client';
+import { createCompany, requestPremiumUpgrade, updateCurrentCompany, type Company } from '../api/client';
 
 type Props = {
   companies: Company[];
@@ -67,6 +67,28 @@ export function CompanyManagement({ companies, activeCompanyId, onSelect, onRefr
       <div><h2>Créer un nouvel espace</h2><p>Chaque entreprise possède ses propres ordinateurs, clients, sessions, paiements et employés.</p></div>
       <form onSubmit={submit} className="tenant-create-form"><label className="field-label">Nom de l’entreprise<input value={name} onChange={event => setName(event.target.value)} placeholder="Ex. Cyber Café Andavamamba" maxLength={160} required /></label><button className="primary-button" disabled={saving || !name.trim()}><Plus size={16}/> {saving ? 'Création…' : 'Créer une entreprise'}</button></form>
     </div>
+    {active && <div className="panel tenant-create-panel">
+      <div>
+        <span className="modal-kicker">ABONNEMENT</span>
+        <h2>Offre actuelle : {active.plan === 'premium' ? 'Premium' : 'Gratuite'}</h2>
+        <p>{active.plan === 'premium'
+          ? `Votre espace bénéficie de Premium jusqu'au ${active.subscription_expires_at ? new Date(active.subscription_expires_at).toLocaleDateString('fr-FR') : 'sans date d’expiration'}.`
+          : '5 ordinateurs, 2 employés et 100 clients. Les sessions et les paiements restent illimités.'}</p>
+      </div>
+      {active.plan === 'free' && active.role === 'admin' && <button className="primary-button" onClick={() => requestConfirmation(
+        'Demander le passage à Premium ?',
+        'Votre demande sera transmise à l’équipe LasyNet. Premium sera activé après vérification manuelle du paiement.',
+        'Envoyer la demande',
+        async () => {
+          try {
+            await requestPremiumUpgrade();
+            notify('Demande Premium envoyée. L’équipe LasyNet vous contactera après vérification.');
+          } catch (error) {
+            notify(error instanceof Error ? error.message : 'Impossible d’envoyer la demande Premium.');
+          }
+        },
+      )}>Demander Premium</button>}
+    </div>}
     {active?.role === 'admin' && <div className="panel tenant-create-panel"><div><h2>Renommer l’espace actif</h2><p>Le nom sera également actualisé dans les paramètres du cybercafé.</p></div><form className="tenant-create-form" onSubmit={event => { event.preventDefault(); void rename(); }}><label className="field-label">Nouveau nom<input value={renameName} onChange={event => setRenameName(event.target.value)} placeholder={active.name} maxLength={160}/></label><button className="secondary-button" disabled={saving || !renameName.trim()}><RefreshCw size={15}/> Enregistrer le nom</button></form></div>}
   </section>;
 }
