@@ -64,7 +64,7 @@ def get_current_user(
 
 def require_admin(current_user: Annotated[User, Depends(get_current_user)]) -> User:
     """Allow sensitive configuration operations to administrators only."""
-    if current_user.role != "admin":
+    if not current_user.is_platform_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Droits administrateur requis.",
