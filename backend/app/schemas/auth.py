@@ -52,4 +52,5 @@ class UserRead(BaseModel):
     full_name: str
     email: str
     role: str
+    is_platform_admin: bool
     is_active: bool
