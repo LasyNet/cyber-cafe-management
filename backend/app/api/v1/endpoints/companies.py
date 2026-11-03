@@ -112,9 +112,7 @@ def create_company(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    owned_companies = db.scalars(
-        select(Company).where(Company.created_by == current_user.id)
-    ).all()
+    owned_companies = db.scalars(select(Company).where(Company.created_by == current_user.id)).all()
     has_premium_company = any(effective_plan(item) == "premium" for item in owned_companies)
     if owned_companies and not has_premium_company:
         raise HTTPException(
