@@ -262,9 +262,12 @@ def test_employee_permissions_are_enforced_and_customizable() -> None:
                 json={"permissions": {"clients.delete": False}},
             )
             assert revoked.status_code == 200
-            assert client.delete(
-                "/api/v1/clients/CL-PERM-DELETE", headers=employee_headers
-            ).status_code == 403
+            assert (
+                client.delete(
+                    "/api/v1/clients/CL-PERM-DELETE", headers=employee_headers
+                ).status_code
+                == 403
+            )
 
             unknown_permission = client.patch(
                 "/api/v1/companies/members/USR-PERM-EMPLOYEE",
