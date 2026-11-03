@@ -165,6 +165,8 @@ def test_employee_permissions_are_enforced_and_customizable() -> None:
             name="Permissions Café",
             slug="permissions-cafe",
             created_by=admin.id,
+            plan="premium",
+            subscription_status="active",
         )
         db.add_all([admin, employee, company])
         db.flush()
