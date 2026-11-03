@@ -183,6 +183,10 @@ def update_current_company(
         "slug": company.slug,
         "is_active": company.is_active,
         "role": membership.role,
+        "plan": effective_plan(company),
+        "subscription_status": company.subscription_status,
+        "subscription_started_at": company.subscription_started_at,
+        "subscription_expires_at": company.subscription_expires_at,
         "created_at": company.created_at,
     }
 
