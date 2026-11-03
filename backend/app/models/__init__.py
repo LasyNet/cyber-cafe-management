@@ -385,6 +385,3 @@ class SubscriptionRequest(Base):
     company: Mapped["Company"] = relationship()
     requester: Mapped["User"] = relationship(foreign_keys=[requested_by])
     reviewer: Mapped["User | None"] = relationship(foreign_keys=[reviewed_by])
-
-
-# SubscriptionRequest relationships are explicit because User has multiple foreign-key roles.
