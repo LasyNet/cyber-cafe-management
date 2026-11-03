@@ -17,7 +17,7 @@ from app.api.deps import AUTH_COOKIE_NAME, get_current_user
 from app.core.config import get_settings
 from app.core.security import TOKEN_TTL_SECONDS, create_access_token, hash_password, verify_password
 from app.db.session import get_db
-from app.models import Company, CompanyMember, Invitation, User
+from app.models import AppSetting, Company, CompanyMember, Invitation, User
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserRead
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -97,23 +97,12 @@ def register(
         if expires_at <= datetime.now(UTC):
             raise HTTPException(status_code=410, detail="Cette invitation a expiré.")
         if invitation.email and invitation.email.lower() != payload.email.lower():
-            raise HTTPException(
-                status_code=403,
-                detail="Cette invitation est réservée à une autre adresse e-mail.",
-            )
-        role = invitation.role
-    elif existing_count:
-        _record_failed_login(request)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "Les inscriptions sont réservées au personnel invité. "
-                "Utilise le lien d’invitation de ton entreprise."
-            ),
-        )
-    else:
-        role = "admin"
+            raise HTTPException(status_code=403, detail="Cette invitation est réservée à une autre adresse e-mail.")
 
+    # The first account bootstraps the platform administrator. Later self-registrations
+    # receive a Free company; invitation roles remain company-scoped, not platform roles.
+    global_role = "admin" if existing_count == 0 else "employee"
+    membership_role = invitation.role if invitation else "admin"
     if db.scalar(select(User.id).where(func.lower(User.email) == payload.email)):
         _record_failed_login(request)
         raise HTTPException(
@@ -126,40 +115,41 @@ def register(
             full_name=payload.full_name,
             email=payload.email,
             password_hash=hash_password(payload.password),
-            role=role,
+            role=global_role,
             is_active=True,
         )
         db.add(user)
         db.flush()
 
-        # Transitional onboarding: new accounts join the migrated legacy
-        # workspace until company creation and per-company invitations ship.
-        company = db.scalar(select(Company).where(Company.slug == "legacy-cyber-cafe"))
-        if company is None:
+        if invitation:
+            company = db.get(Company, invitation.company_id)
+            if company is None or not company.is_active:
+                raise HTTPException(status_code=404, detail="Entreprise de l’invitation introuvable.")
+            invitation.accepted_at = datetime.now(UTC)
+        elif existing_count == 0:
+            company = db.scalar(select(Company).where(Company.slug == "legacy-cyber-cafe"))
+            if company is None:
+                company = Company(name="Cyber Café Central", slug="legacy-cyber-cafe", created_by=user.id, is_active=True)
+                db.add(company)
+                db.flush()
+            elif company.created_by is None:
+                company.created_by = user.id
+        else:
             company = Company(
-                name="Cyber Café Central",
-                slug="legacy-cyber-cafe",
-                created_by=user.id if role == "admin" else None,
+                name=f"Cyber Café de {payload.full_name}",
+                slug=f"cyber-cafe-{user.id.lower()}",
+                created_by=user.id,
                 is_active=True,
             )
             db.add(company)
             db.flush()
-        elif role == "admin" and company.created_by is None:
-            company.created_by = user.id
+            db.add(AppSetting(company_id=company.id, cafe_name=company.name, hourly_rate=1200, currency="Ar"))
 
-        target_company_id = invitation.company_id if invitation else company.id
-        if invitation:
-            target_company = db.get(Company, target_company_id)
-            if target_company is None or not target_company.is_active:
-                raise HTTPException(
-                    status_code=404, detail="Entreprise de l’invitation introuvable."
-                )
-            invitation.accepted_at = datetime.now(UTC)
         db.add(
             CompanyMember(
                 user_id=user.id,
-                company_id=target_company_id,
-                role=role,
+                company_id=company.id,
+                role=membership_role,
                 permissions={},
                 is_active=True,
             )
