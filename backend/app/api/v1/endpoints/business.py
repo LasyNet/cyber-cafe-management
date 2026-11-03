@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 from app.api.deps import (
     get_active_company_id,
     get_current_user,
-    require_company_admin,
     require_permission,
 )
 from app.db.session import get_db
