@@ -14,8 +14,9 @@ from app.api.deps import (
     get_current_user,
     require_permission,
 )
+from app.core.plans import require_quota
 from app.db.session import get_db
-from app.models import AppSetting, CafeSession, Client, Computer, Payment
+from app.models import AppSetting, CafeSession, Client, Company, Computer, Payment
 from app.schemas.business import (
     ClientCreate,
     ClientRead,
@@ -96,6 +97,10 @@ def create_client(
     db: Session = Depends(get_db),
     company_id: str = Depends(get_active_company_id),
 ):
+    company = db.get(Company, company_id)
+    if company is None:
+        raise HTTPException(status_code=404, detail="Entreprise introuvable.")
+    require_quota(db, company, Client, "clients", "clients")
     client = Client(company_id=company_id, **payload.model_dump())
     db.add(client)
     _commit(db)
@@ -176,6 +181,10 @@ def create_computer(
     db: Session = Depends(get_db),
     company_id: str = Depends(get_active_company_id),
 ):
+    company = db.get(Company, company_id)
+    if company is None:
+        raise HTTPException(status_code=404, detail="Entreprise introuvable.")
+    require_quota(db, company, Computer, "computers", "ordinateurs")
     data = payload.model_dump()
     if data["computer_type"] == "Interne" and not data["mac_address"]:
         raise HTTPException(
