@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import CafeSession, Client, Company, CompanyMember, Computer, Invitation
+from app.models import Client, Company, CompanyMember, Computer, Invitation
 
 FREE_LIMITS = {
     "computers": 5,
