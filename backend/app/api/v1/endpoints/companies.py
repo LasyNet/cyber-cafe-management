@@ -58,7 +58,13 @@ def _membership_read(membership: CompanyMember) -> dict:
         "is_active": membership.company.is_active,
         "role": membership.role,
         "plan": effective_plan(membership.company),
-        "subscription_status": membership.company.subscription_status,
+        "subscription_status": (
+            "expired"
+            if membership.company.plan == "premium"
+            and effective_plan(membership.company) == "free"
+            and membership.company.subscription_expires_at
+            else membership.company.subscription_status
+        ),
         "subscription_started_at": membership.company.subscription_started_at,
         "subscription_expires_at": membership.company.subscription_expires_at,
         "created_at": membership.company.created_at,
@@ -268,6 +274,12 @@ def update_member(
         raise HTTPException(status_code=404, detail="Membre introuvable.")
     data = payload.model_dump(exclude_unset=True)
     if "permissions" in data and data["permissions"] is not None:
+        company = db.get(Company, company_id)
+        if company is None or effective_plan(company) != "premium":
+            raise HTTPException(
+                status_code=403,
+                detail="La personnalisation des permissions est réservée à l'offre Premium.",
+            )
         unknown = set(data["permissions"]) - set(ALL_PERMISSIONS)
         if unknown:
             raise HTTPException(
