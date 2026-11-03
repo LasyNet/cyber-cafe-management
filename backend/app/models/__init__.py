@@ -355,7 +355,6 @@ class AppSetting(Base):
     )
 
 
-
 class SubscriptionRequest(Base):
     """A manual Premium upgrade request reviewed by a platform administrator."""
 
