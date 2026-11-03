@@ -26,6 +26,10 @@ class CompanyRead(BaseModel):
     slug: str
     is_active: bool
     role: str
+    plan: str
+    subscription_status: str
+    subscription_started_at: datetime | None
+    subscription_expires_at: datetime | None
     created_at: datetime
 
 
