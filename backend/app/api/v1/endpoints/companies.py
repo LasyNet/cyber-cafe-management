@@ -255,25 +255,26 @@ def update_member(
             )
     new_role = data.get("role", membership.role)
     deactivating = data.get("is_active") is False and membership.is_active
-    losing_admin = membership.role == "admin" and (
-        new_role != "admin" or deactivating
-    )
+    losing_admin = membership.role == "admin" and (new_role != "admin" or deactivating)
     if losing_admin:
         if user_id == current_user.id:
             raise HTTPException(
                 status_code=409,
                 detail="Vous ne pouvez pas retirer vos propres droits administrateur.",
             )
-        other_admins = db.scalar(
-            select(func.count())
-            .select_from(CompanyMember)
-            .where(
-                CompanyMember.company_id == company_id,
-                CompanyMember.role == "admin",
-                CompanyMember.is_active.is_(True),
-                CompanyMember.user_id != user_id,
+        other_admins = (
+            db.scalar(
+                select(func.count())
+                .select_from(CompanyMember)
+                .where(
+                    CompanyMember.company_id == company_id,
+                    CompanyMember.role == "admin",
+                    CompanyMember.is_active.is_(True),
+                    CompanyMember.user_id != user_id,
+                )
             )
-        ) or 0
+            or 0
+        )
         if other_admins == 0:
             raise HTTPException(
                 status_code=409,
