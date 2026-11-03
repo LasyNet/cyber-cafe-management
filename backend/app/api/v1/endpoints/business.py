@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -14,7 +14,7 @@ from app.api.deps import (
     get_current_user,
     require_permission,
 )
-from app.core.plans import require_quota
+from app.core.plans import history_cutoff, require_quota
 from app.db.session import get_db
 from app.models import AppSetting, CafeSession, Client, Company, Computer, Payment
 from app.schemas.business import (
@@ -278,11 +278,14 @@ def list_sessions(
     db: Session = Depends(get_db),
     company_id: str = Depends(get_active_company_id),
 ):
-    return db.scalars(
-        select(CafeSession)
-        .where(CafeSession.company_id == company_id)
-        .order_by(CafeSession.started_at.desc())
-    ).all()
+    company = db.get(Company, company_id)
+    query = select(CafeSession).where(CafeSession.company_id == company_id)
+    cutoff = history_cutoff(company) if company else None
+    if cutoff is not None:
+        query = query.where(
+            or_(CafeSession.status == "En cours", CafeSession.started_at >= cutoff)
+        )
+    return db.scalars(query.order_by(CafeSession.started_at.desc())).all()
 
 
 @router.post(
@@ -369,9 +372,12 @@ def list_payments(
     db: Session = Depends(get_db),
     company_id: str = Depends(get_active_company_id),
 ):
-    return db.scalars(
-        select(Payment).where(Payment.company_id == company_id).order_by(Payment.created_at.desc())
-    ).all()
+    company = db.get(Company, company_id)
+    query = select(Payment).where(Payment.company_id == company_id)
+    cutoff = history_cutoff(company) if company else None
+    if cutoff is not None:
+        query = query.where(Payment.created_at >= cutoff)
+    return db.scalars(query.order_by(Payment.created_at.desc())).all()
 
 
 @router.post(
