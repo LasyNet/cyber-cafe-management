@@ -55,7 +55,7 @@ export function Sidebar({ cafeName, activePage, activeSessionsCount, onNavigate,
         <div className="nav-label management-label">GESTION</div>
         <nav className="navigation">
           {nav.slice(5).filter(({ label }) => {
-            if (label === 'Personnel') return isCompanyAdmin || permissions['personnel.manage'] === true;
+            if (label === 'Personnel') return isCompanyAdmin;
             const key: Partial<Record<Page, string>> = { 'Facturation': 'payments.read', 'Rapports': 'payments.read', 'Paramètres': 'settings.read' };
             return !key[label] || permissions[key[label] as string] !== false;
           }).map(({ label, icon: Icon }) => (
