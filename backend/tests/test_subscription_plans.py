@@ -42,6 +42,7 @@ def test_free_plan_enforces_computer_and_client_quotas() -> None:
             email="free-owner@example.com",
             password_hash="not-used",
             role="admin",
+            is_platform_admin=True,
             is_active=True,
         )
         company = Company(
