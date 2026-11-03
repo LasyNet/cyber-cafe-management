@@ -56,9 +56,10 @@ def require_quota(
     limit = plan_limits(company).get(quota_key)
     if limit is None:
         return
-    current = db.scalar(
-        select(func.count()).select_from(model).where(model.company_id == company.id)
-    ) or 0
+    current = (
+        db.scalar(select(func.count()).select_from(model).where(model.company_id == company.id))
+        or 0
+    )
     if current >= limit:
         raise HTTPException(
             status_code=403,
@@ -75,26 +76,32 @@ def require_staff_quota(db: Session, company: Company, role: str) -> None:
     limit = limits["employees" if role == "employee" else "admins"]
     if limit is None:
         return
-    active_count = db.scalar(
-        select(func.count())
-        .select_from(CompanyMember)
-        .where(
-            CompanyMember.company_id == company.id,
-            CompanyMember.role == role,
-            CompanyMember.is_active.is_(True),
+    active_count = (
+        db.scalar(
+            select(func.count())
+            .select_from(CompanyMember)
+            .where(
+                CompanyMember.company_id == company.id,
+                CompanyMember.role == role,
+                CompanyMember.is_active.is_(True),
+            )
         )
-    ) or 0
-    pending_count = db.scalar(
-        select(func.count())
-        .select_from(Invitation)
-        .where(
-            Invitation.company_id == company.id,
-            Invitation.role == role,
-            Invitation.accepted_at.is_(None),
-            Invitation.revoked_at.is_(None),
-            Invitation.expires_at > datetime.now(UTC),
+        or 0
+    )
+    pending_count = (
+        db.scalar(
+            select(func.count())
+            .select_from(Invitation)
+            .where(
+                Invitation.company_id == company.id,
+                Invitation.role == role,
+                Invitation.accepted_at.is_(None),
+                Invitation.revoked_at.is_(None),
+                Invitation.expires_at > datetime.now(UTC),
+            )
         )
-    ) or 0
+        or 0
+    )
     if active_count + pending_count >= limit:
         label = "employés" if role == "employee" else "administrateur"
         raise HTTPException(
