@@ -16,11 +16,10 @@ const labels: Record<string, string> = {
   'clients.delete': 'Supprimer un client', 'payments.read': 'Consulter les paiements',
   'payments.create': 'Créer un paiement', 'payments.update': 'Encaisser / modifier un paiement',
   'settings.read': 'Consulter les paramètres', 'settings.update': 'Modifier les paramètres',
-  'personnel.manage': 'Gérer le personnel', 'companies.manage': 'Gérer les entreprises',
 };
 const groupLabels: Record<string, string> = {
   computers: 'Ordinateurs', sessions: 'Sessions', clients: 'Clients',
-  payments: 'Paiements', settings: 'Paramètres', personnel: 'Personnel', companies: 'Entreprises',
+  payments: 'Paiements', settings: 'Paramètres',
 };
 
 export function StaffManagement({ notify, requestConfirmation }: Props) {
