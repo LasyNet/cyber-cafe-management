@@ -210,24 +210,33 @@ def test_employee_permissions_are_enforced_and_customizable() -> None:
             assert employee_access.json()["permissions"]["clients.read"] is True
             assert employee_access.json()["permissions"]["computers.create"] is False
             assert client.get("/api/v1/clients", headers=employee_headers).status_code == 200
-            assert client.post(
-                "/api/v1/computers",
-                headers=employee_headers,
-                json={
-                    "name": "Restricted PC",
-                    "computer_type": "Interne",
-                    "mac_address": "00:11:22:33:44:55",
-                    "status": "Disponible",
-                },
-            ).status_code == 403
-            assert client.delete(
-                "/api/v1/clients/CL-PERM-DELETE", headers=employee_headers
-            ).status_code == 403
-            assert client.patch(
-                "/api/v1/settings",
-                headers=employee_headers,
-                json={"cafe_name": "Forbidden"},
-            ).status_code == 403
+            assert (
+                client.post(
+                    "/api/v1/computers",
+                    headers=employee_headers,
+                    json={
+                        "name": "Restricted PC",
+                        "computer_type": "Interne",
+                        "mac_address": "00:11:22:33:44:55",
+                        "status": "Disponible",
+                    },
+                ).status_code
+                == 403
+            )
+            assert (
+                client.delete(
+                    "/api/v1/clients/CL-PERM-DELETE", headers=employee_headers
+                ).status_code
+                == 403
+            )
+            assert (
+                client.patch(
+                    "/api/v1/settings",
+                    headers=employee_headers,
+                    json={"cafe_name": "Forbidden"},
+                ).status_code
+                == 403
+            )
 
             admin_access = client.get("/api/v1/companies/access", headers=admin_headers)
             assert admin_access.status_code == 200
@@ -240,9 +249,12 @@ def test_employee_permissions_are_enforced_and_customizable() -> None:
             )
             assert customized.status_code == 200
             assert customized.json()["permissions"]["clients.delete"] is True
-            assert client.delete(
-                "/api/v1/clients/CL-PERM-DELETE", headers=employee_headers
-            ).status_code == 204
+            assert (
+                client.delete(
+                    "/api/v1/clients/CL-PERM-DELETE", headers=employee_headers
+                ).status_code
+                == 204
+            )
 
             revoked = client.patch(
                 "/api/v1/companies/members/USR-PERM-EMPLOYEE",
