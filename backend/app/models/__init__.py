@@ -361,7 +361,10 @@ class SubscriptionRequest(Base):
 
     __tablename__ = "subscription_requests"
     __table_args__ = (
-        CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="ck_subscription_requests_status"),
+        CheckConstraint(
+            "status IN ('pending', 'approved', 'rejected')",
+            name="ck_subscription_requests_status",
+        ),
         Index("ix_subscription_requests_company_status", "company_id", "status"),
     )
 
