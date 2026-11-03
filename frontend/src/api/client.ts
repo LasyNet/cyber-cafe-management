@@ -15,7 +15,7 @@ export type CompanyAccess = { company_id: string; role: 'admin' | 'employee'; pe
 export const getActiveCompanyId = (): string | null => { try { return window.localStorage.getItem(ACTIVE_COMPANY_KEY); } catch { return null; } };
 export const setActiveCompanyId = (id: string | null) => { try { if (id) window.localStorage.setItem(ACTIVE_COMPANY_KEY, id); else window.localStorage.removeItem(ACTIVE_COMPANY_KEY); } catch { /* Selection is reloaded from the membership list when storage is unavailable. */ } };
 
-export type AuthUser = { id: string; full_name: string; email: string; role: string; is_active: boolean };
+export type AuthUser = { id: string; full_name: string; email: string; role: string; is_platform_admin: boolean; is_active: boolean };
 type ApiComputer = { id: string; name: string; computer_type: Computer['type']; mac_address: string | null; status: Computer['status'] };
 type ApiClient = { id: string; name: string; phone: string | null; email: string | null; created_at: string };
 type ApiSession = { id: string; computer_id: string; client_id: string; started_at: string; ended_at: string | null; planned_hours: number | null; status: Session['status']; amount: number | string };
