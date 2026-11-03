@@ -152,3 +152,7 @@ export const acceptCompanyInvitation = (inviteToken: string) => request<{ compan
 export const getCompanyAccess = () => request<CompanyAccess>('/companies/access');
 
 export const requestPremiumUpgrade = (message?: string) => request<{ id: string; company_id: string; status: string; created_at: string }>('/companies/subscription/request', json('POST', { ...(message ? { message } : {}) }));
+
+export type PlatformSubscriptionRequest = { id: string; company_id: string; company_name: string; requested_by: string; requested_by_name: string; message: string | null; status: string; created_at: string };
+export const listPlatformSubscriptionRequests = () => request<PlatformSubscriptionRequest[]>('/platform/subscription-requests');
+export const activatePremium = (requestId: string, durationDays = 30) => request<{ company_id: string; plan: string; subscription_status: string; subscription_expires_at: string }>(`/platform/subscription-requests/${encodeURIComponent(requestId)}/activate`, json('POST', { duration_days: durationDays }));
