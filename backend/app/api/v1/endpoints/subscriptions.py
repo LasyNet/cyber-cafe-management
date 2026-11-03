@@ -119,9 +119,7 @@ def activate_premium(
     db: Annotated[Session, Depends(get_db)],
 ):
     request = db.scalar(
-        select(SubscriptionRequest)
-        .where(SubscriptionRequest.id == request_id)
-        .with_for_update()
+        select(SubscriptionRequest).where(SubscriptionRequest.id == request_id).with_for_update()
     )
     if request is None:
         raise HTTPException(status_code=404, detail="Demande Premium introuvable.")
