@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react';
-import { Building2, Check, Plus, RefreshCw } from 'lucide-react';
-import { createCompany, requestPremiumUpgrade, updateCurrentCompany, type Company } from '../api/client';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Building2, Check, Plus, RefreshCw, ShieldCheck } from 'lucide-react';
+import { activatePremium, createCompany, listPlatformSubscriptionRequests, requestPremiumUpgrade, updateCurrentCompany, type Company, type PlatformSubscriptionRequest } from '../api/client';
 
 type Props = {
   companies: Company[];
@@ -9,13 +9,32 @@ type Props = {
   onRefresh: () => Promise<void>;
   notify: (message: string) => void;
   requestConfirmation: (title: string, message: string, label: string, action: () => void | Promise<void>) => void;
+  isPlatformAdmin: boolean;
 };
 
-export function CompanyManagement({ companies, activeCompanyId, onSelect, onRefresh, notify, requestConfirmation }: Props) {
+export function CompanyManagement({ companies, activeCompanyId, onSelect, onRefresh, notify, requestConfirmation, isPlatformAdmin }: Props) {
   const [name, setName] = useState('');
   const [renameName, setRenameName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [subscriptionRequests, setSubscriptionRequests] = useState<PlatformSubscriptionRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
   const active = companies.find(company => company.id === activeCompanyId) ?? null;
+
+  const refreshSubscriptionRequests = async () => {
+    if (!isPlatformAdmin) return;
+    setRequestsLoading(true);
+    try {
+      setSubscriptionRequests(await listPlatformSubscriptionRequests());
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'Impossible de charger les demandes Premium.');
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void refreshSubscriptionRequests();
+  }, [isPlatformAdmin]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -88,6 +107,40 @@ export function CompanyManagement({ companies, activeCompanyId, onSelect, onRefr
           }
         },
       )}>Demander Premium</button>}
+    </div>}
+    {isPlatformAdmin && <div className="panel tenant-create-panel">
+      <div>
+        <span className="modal-kicker">ADMINISTRATION LASYNET</span>
+        <h2>Demandes de passage à Premium</h2>
+        <p>Vérifiez le paiement, puis activez manuellement l’abonnement pour 30 jours.</p>
+      </div>
+      {requestsLoading ? <span className="muted-text">Chargement des demandes…</span> : subscriptionRequests.length === 0
+        ? <span className="muted-text">Aucune demande en attente.</span>
+        : <div className="tenant-company-grid">
+          {subscriptionRequests.map(item => <article className="tenant-company-card" key={item.id}>
+            <div className="tenant-company-icon"><ShieldCheck size={21}/></div>
+            <div className="tenant-company-copy">
+              <strong>{item.company_name}</strong>
+              <span>{item.requested_by_name} · {new Date(item.created_at).toLocaleDateString('fr-FR')}</span>
+              {item.message && <span>{item.message}</span>}
+            </div>
+            <button className="primary-button" onClick={() => requestConfirmation(
+              'Activer Premium pour cette entreprise ?',
+              'Après vérification du paiement, l’entreprise bénéficiera de Premium pendant 30 jours.',
+              'Activer Premium',
+              async () => {
+                try {
+                  await activatePremium(item.id, 30);
+                  await refreshSubscriptionRequests();
+                  await onRefresh();
+                  notify('Premium activé pour ' + item.company_name + ' pendant 30 jours.');
+                } catch (error) {
+                  notify(error instanceof Error ? error.message : 'Activation Premium impossible.');
+                }
+              },
+            )}>Activer Premium</button>
+          </article>)}
+        </div>}
     </div>}
     {active?.role === 'admin' && <div className="panel tenant-create-panel"><div><h2>Renommer l’espace actif</h2><p>Le nom sera également actualisé dans les paramètres du cybercafé.</p></div><form className="tenant-create-form" onSubmit={event => { event.preventDefault(); void rename(); }}><label className="field-label">Nouveau nom<input value={renameName} onChange={event => setRenameName(event.target.value)} placeholder={active.name} maxLength={160}/></label><button className="secondary-button" disabled={saving || !renameName.trim()}><RefreshCw size={15}/> Enregistrer le nom</button></form></div>}
   </section>;
