@@ -362,7 +362,7 @@ function App() {
     <div className="global-loading-card"><LoaderCircle className="global-loading-spinner" size={34} /><strong>Veuillez patienter</strong><span>Chargement et synchronisation des données…</span></div>
   </div> : null;
 
-  if (screen !== 'app') return <><LandingPage screen={screen} onNavigate={navigateScreen} onSubmit={submitAuth} onRegister={submitRegistration} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} fullName={registerName} setFullName={setRegisterName} inviteCode={registerInviteCode} setInviteCode={setRegisterInviteCode} notice={authNotice} />{loadingOverlay}</>;;
+  if (screen !== 'app') return <><LandingPage screen={screen} onNavigate={navigateScreen} onSubmit={submitAuth} onRegister={submitRegistration} email={authEmail} setEmail={setAuthEmail} password={authPassword} setPassword={setAuthPassword} fullName={registerName} setFullName={setRegisterName} notice={authNotice} />{loadingOverlay}</>;;
 
   return <div className="app-shell">
     <Sidebar cafeName={activeCompany?.name || store.settings.cafeName} activePage={activePage} activeSessionsCount={activeSessions.length} onNavigate={setActivePage} onNotify={notify} onLogout={() => requestConfirmation('Se déconnecter ?', 'Voulez-vous vraiment quitter votre espace de gestion ?', 'Se déconnecter', logout, 'danger')} companies={companies} activeCompanyId={activeCompanyIdState} onCompanyChange={changeCompany} isCompanyAdmin={activeCompany?.role === 'admin'} permissions={companyAccess?.permissions ?? {}} profileName={authName} profileRole={activeCompany?.role === 'admin' ? 'Administrateur' : 'Employé'} />
